@@ -9,6 +9,7 @@
 
 #include "mediasystem/core/ComponentSystem.hpp"
 #include "mediasystem/events/EventManager.h"
+#include "mediasystem/input/InputComponent.h"
 
 namespace mediasystem {
     

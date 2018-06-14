@@ -23,6 +23,10 @@ namespace mediasystem {
         
         ~Entity() = default;
         
+        //non copyable
+        Entity(const Entity&) = delete;
+        Entity& operator=(const Entity&) = delete;
+        
         void destroy(){
             if(isValid()){
                 for(int i = 0; i < mComponents.size(); i++){
@@ -37,6 +41,13 @@ namespace mediasystem {
                 mId = std::numeric_limits<size_t>::max();
             }
         }
+        
+        //todo, need a way to clone the components, which will be a handler that has io with generic pointers generic shared_ptr
+        //static std::shared_ptr<void> clone(std::shared_ptr<void> other);
+        //these functions will be in a runtime type map like the componetIds below
+//        EntityHandle clone(){
+//
+//        }
         
         inline bool isValid(){ return mId != std::numeric_limits<size_t>::max(); }
         inline size_t getId() const { return mId; }

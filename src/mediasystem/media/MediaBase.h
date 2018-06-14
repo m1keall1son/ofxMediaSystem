@@ -18,9 +18,9 @@ namespace mediasystem {
         virtual void init() = 0;
         virtual void bind() = 0;
         virtual void unbind() = 0;
-        virtual void debugDraw() = 0;
+        virtual void debugDraw(const ofRectangle& area, float fontsize) = 0;
         virtual bool isInit() const = 0;
-        virtual glm::vec2 getMediaSize() = 0;
+        virtual glm::vec2 getMediaSize()const = 0;
     protected:
         Entity& mContext;
         std::weak_ptr<ofNode> mNode;

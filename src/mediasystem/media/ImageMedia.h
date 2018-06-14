@@ -25,9 +25,9 @@ namespace mediasystem {
         virtual void bind()override;
         virtual void unbind()override;
         virtual bool isInit()const override;
-        virtual void debugDraw()override;
+        virtual void debugDraw(const ofRectangle& area, float fontsize)override;
         
-        glm::vec2 getMediaSize()override;
+        glm::vec2 getMediaSize()const override;
         
         virtual void load(const std::filesystem::path& path);
         inline ofImage& getImage(){ return mImage; }

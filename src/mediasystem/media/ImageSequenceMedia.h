@@ -13,11 +13,11 @@ namespace mediasystem {
         
         void init()override;
         bool isInit()const override;
-        void debugDraw()override;
+        void debugDraw(const ofRectangle& area, float fontsize)override;
         void bind()override;
         void unbind()override;
         
-        glm::vec2 getMediaSize()override{ return getSize(); }
+        glm::vec2 getMediaSize()const override;
         
 	protected:
         

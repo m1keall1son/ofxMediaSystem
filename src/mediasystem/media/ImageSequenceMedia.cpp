@@ -22,11 +22,18 @@ namespace mediasystem {
         for ( auto & path : mSeqPaths ) {
             ofImage surface;
             surface.load(path);
-            mSize = glm::vec2(surface.getWidth(),surface.getHeight());
             mImages.push_back(surface);
         }
         reset();
         mIsInit = true;
+    }
+    
+    glm::vec2 ImageSequenceMedia::getMediaSize()const
+    {
+        if(!mImages.empty()){
+            return glm::vec2(mImages.front().getWidth(), mImages.front().getHeight());
+        }
+        return glm::vec2(0);
     }
     
     bool ImageSequenceMedia::isInit()const
@@ -47,7 +54,7 @@ namespace mediasystem {
         mImages[index].unbind();
     }
     
-    void ImageSequenceMedia::debugDraw()
+    void ImageSequenceMedia::debugDraw(const ofRectangle& area, float fontsize)
     {
         
         auto style = ofGetStyle();
@@ -65,17 +72,17 @@ namespace mediasystem {
         
         ofSetColor(playingColor);
         ofNoFill();
-        ofDrawRectangle(0, 0, getCurrentTexture()->getWidth(), getCurrentTexture()->getHeight());
-        ofDrawLine(0, 0, getCurrentTexture()->getWidth(), getCurrentTexture()->getHeight());
-        ofDrawLine(getCurrentTexture()->getWidth(), 0, 0, getCurrentTexture()->getHeight());
-        auto font = getDebugFont();
+        ofDrawRectangle(area);
+        ofDrawLine(0, 0, area.width, area.height);
+        ofDrawLine(area.width, 0, 0,area.height);
+        auto font = getDebugFont(fontsize);
         auto extra = font->getSize() + font->getDescenderHeight() + font->getAscenderHeight();
         auto padding = 2;
         
         //type
         ofFill();
         ofSetColor(50, 50, 50);
-        auto viewType = "IMAGE SEQUENCE VIEW";
+        auto viewType = "IMAGE SEQUENCE MEDIA";
         
         auto sw = font->stringWidth(viewType);
         auto line = 0;
@@ -122,14 +129,14 @@ namespace mediasystem {
         ofFill();
         ofSetColor(0, 0, 0);
         auto node = mNode.lock();
-        auto area = "[x: "+ofToString(node->getPosition().x)+" y: "+ofToString(node->getPosition().y)+" w: "+ofToString(getCurrentTexture()->getWidth())+" h: "+ofToString(getCurrentTexture()->getHeight())+"]";
+        auto nodesize = "[x: "+ofToString(node->getPosition().x)+" y: "+ofToString(node->getPosition().y)+" w: "+ofToString(area.width)+" h: "+ofToString(area.height)+"] media size [w: "+ofToString(getCurrentTexture()->getWidth())+" h: "+ofToString(getCurrentTexture()->getHeight())+"]";
         
-        sw = font->stringWidth(area);
+        sw = font->stringWidth(nodesize);
         line = (extra + (padding * 2))*3;
         
         ofDrawRectangle(0, line, sw + (padding*2), (padding*2) + extra);
         ofSetColor(255, 255, 255);
-        font->drawStringAsShapes(area, padding, line + padding + font->getAscenderHeight() );
+        font->drawStringAsShapes(nodesize, padding, line + padding + font->getAscenderHeight() );
         
         //completeness
         ofFill();
@@ -144,7 +151,7 @@ namespace mediasystem {
         font->drawStringAsShapes(position, padding, line + padding + font->getAscenderHeight() );
         
         ofSetColor(127, 255, 255);
-        ofDrawRectangle(0, getCurrentTexture()->getHeight()-10, getCurrentTexture()->getHeight()*getState().getPlaybackPosition(), 10);
+        ofDrawRectangle(0, area.height-10, area.width*getState().getPlaybackPosition(), 10);
         
         //pop
         ofSetColor(col);

@@ -339,10 +339,12 @@ namespace mediasystem {
                 while(layerIt != layerEnd){
                     if(auto comp = layerIt->lock()){
                         comp->update();
+                        ++layerIt;
                     }else{
                         layerIt = indexIt->second.erase(layerIt);
                     }
                 }
+                ++indexIt;
             }
         }
     }

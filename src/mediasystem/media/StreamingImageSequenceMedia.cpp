@@ -130,8 +130,12 @@ namespace mediasystem {
         img.setUseTexture(false);
         img.load(mSeqPaths[mState.currentFrame]);
         mCurrentImage.allocate(img.getPixels());
-        mSize = glm::vec2(mCurrentImage.getWidth(), mCurrentImage.getHeight());
         mIsInit = true;
+    }
+    
+    glm::vec2 StreamingImageSequenceMedia::getMediaSize()const
+    {
+        return glm::vec2(mCurrentImage.getWidth(), mCurrentImage.getHeight());
     }
         
     void StreamingImageSequenceMedia::start(Scene*){
@@ -158,7 +162,7 @@ namespace mediasystem {
         mCurrentImage.unbind();
     }
     
-    void StreamingImageSequenceMedia::debugDraw()
+    void StreamingImageSequenceMedia::debugDraw(const ofRectangle& area, float fontsize)
     {
         if(!mCurrentImage.isAllocated()) return;
         //push
@@ -177,17 +181,17 @@ namespace mediasystem {
         //draw
         ofSetColor(playingColor);
         ofNoFill();
-        ofDrawRectangle(0, 0, mCurrentImage.getWidth(), mCurrentImage.getHeight());
-        ofDrawLine(0, 0, mCurrentImage.getWidth(), mCurrentImage.getHeight());
-        ofDrawLine(mCurrentImage.getWidth(), 0, 0, mCurrentImage.getHeight());
-        auto font = getDebugFont();
+        ofDrawRectangle(area);
+        ofDrawLine(0, 0, area.width, area.height);
+        ofDrawLine(area.width, 0, 0, area.height);
+        auto font = getDebugFont(fontsize);
         auto extra = font->getSize() + font->getDescenderHeight() + font->getAscenderHeight();
         auto padding = 2;
         
         //current type
         ofFill();
         ofSetColor(50, 50, 50);
-        auto viewName = "STREAMING IMAGE SEQUENCE VIEW";
+        auto viewName = "STREAMING IMAGE SEQUENCE MEDIA";
         
         auto sw = font->stringWidth(viewName);
         auto line = 0;
@@ -234,14 +238,14 @@ namespace mediasystem {
         ofFill();
         ofSetColor(0, 0, 0);
         auto node = mNode.lock();
-        auto area = "[x: "+ofToString(node->getPosition().x)+" y: "+ofToString(node->getPosition().y)+" w: "+ofToString(mCurrentImage.getWidth())+" h: "+ofToString(mCurrentImage.getHeight())+"]";
+        auto nodesize = "[x: "+ofToString(node->getPosition().x)+" y: "+ofToString(node->getPosition().y)+" w: "+ofToString(area.width)+" h: "+ofToString(area.height)+"] media size [w: "+ofToString(mCurrentImage.getWidth())+" h: "+ofToString(mCurrentImage.getHeight())+"]";
         
-        sw = font->stringWidth(area);
+        sw = font->stringWidth(nodesize);
         line = (extra + (padding * 2))*3;
         
         ofDrawRectangle(0, line, sw + (padding*2), (padding*2) + extra);
         ofSetColor(255, 255, 255);
-        font->drawStringAsShapes(area, padding, line + padding + font->getAscenderHeight() );
+        font->drawStringAsShapes(nodesize, padding, line + padding + font->getAscenderHeight() );
         
         //completeness
         ofFill();
@@ -256,7 +260,7 @@ namespace mediasystem {
         font->drawStringAsShapes(position, padding, line + padding + font->getAscenderHeight() );
         
         ofSetColor(127, 255, 255);
-        ofDrawRectangle(0, mCurrentImage.getHeight()-10, mCurrentImage.getHeight()*getState().getPlaybackPosition(), 10);
+        ofDrawRectangle(0, area.height-10, area.width*getState().getPlaybackPosition(), 10);
         
         //missed frames
         ofFill();
