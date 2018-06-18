@@ -15,10 +15,12 @@
 
 namespace mediasystem {
     
+    class Scene;
+    
     class LayeredMediaSystem {
     public:
         
-        LayeredMediaSystem(EventManager& context);
+        LayeredMediaSystem(Scene& context);
     
         template<typename Presenter, typename...Args>
         Presenter* createPresenter( Args&&...args ){
@@ -36,10 +38,13 @@ namespace mediasystem {
         void draw();
         void clear();
         
+        inline void setGlobalAlpha(float alpha){ mGlobalAlpha = alpha; }
+        inline float getGlobalAlpha()const{ return mGlobalAlpha; }
+
     private:
         
-        void onDrawEvent(const IEventRef& event);
-        void onNewComponentEvent(const IEventRef& event);
+        EventStatus onDrawEvent(const IEventRef& event);
+        EventStatus onNewComponentEvent(const IEventRef& event);
 
         void insertIntoLayer(float layer, LayeredMediaComponentHandle&& handle);
         
@@ -47,7 +52,7 @@ namespace mediasystem {
         bool mDebugDraw{false};
         //todo this could be targets + materials etc.
         std::unique_ptr<IPresenter> mPresenter;
-        EventManager& mEventManager;
+        float mGlobalAlpha{1.f};
     };
     
 }//end namespace mediasystem

@@ -6,7 +6,7 @@
 //
 
 #include "LayeredMediaComponent.h"
-#include "mediasystem/core/Entity.hpp"
+#include "mediasystem/core/Entity.h"
 #include "ofMain.h"
 
 namespace mediasystem {

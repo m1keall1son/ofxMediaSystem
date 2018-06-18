@@ -6,7 +6,7 @@
 //
 
 #include "InputComponent.h"
-#include "mediasystem/core/Entity.hpp"
+#include "mediasystem/core/Entity.h"
 
 namespace mediasystem {
         
@@ -92,6 +92,7 @@ namespace mediasystem {
             mHandlers.mOnMouseDragged(mContext, mouse, mDragState);
             return true;
         }
+        return false;
     }
     
     bool InputComponent::mousePressed(const ofMouseEventArgs& mouse)

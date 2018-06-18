@@ -11,9 +11,7 @@
 #include "mediasystem/media/MediaBase.h"
 
 namespace mediasystem {
-    
-    class Entity;
-    
+        
     class ImageMedia : public MediaBase {
     public:
         

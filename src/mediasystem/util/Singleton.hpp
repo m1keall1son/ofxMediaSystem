@@ -7,13 +7,20 @@ namespace mediasystem {
 	class Singleton {
 	public:
 
-		static T* get() {
+		static T* getPtr() {
 			if (!sInstance) {
 				init();
 			}
 			return sInstance.get();
 		}
 
+        static T& get() {
+            if (!sInstance) {
+                init();
+            }
+            return *sInstance;
+        }
+        
 		static void destroy() {
 			sInstance.reset();
 		}

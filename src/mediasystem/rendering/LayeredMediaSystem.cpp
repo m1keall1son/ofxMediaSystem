@@ -6,35 +6,36 @@
 //
 
 #include "LayeredMediaSystem.h"
-#include "mediasystem/core/CoreEvents.h"
+#include "mediasystem/core/SceneEvents.h"
 #include "mediasystem/util/Log.h"
 
 namespace mediasystem {
     
-    LayeredMediaSystem::LayeredMediaSystem(EventManager& eventManager):
-        mEventManager(eventManager)
+    LayeredMediaSystem::LayeredMediaSystem(Scene& context)
     {
-        mEventManager.addDelegate<DrawEvent>(EventDelegate::create<LayeredMediaSystem,&LayeredMediaSystem::onDrawEvent>(this));
-        mEventManager.addDelegate<NewComponent<LayeredMediaComponent>>(EventDelegate::create<LayeredMediaSystem,&LayeredMediaSystem::onNewComponentEvent>(this));
+        context.addDelegate<Draw>(EventDelegate::create<LayeredMediaSystem,&LayeredMediaSystem::onDrawEvent>(this));
+        context.addDelegate<NewComponent<LayeredMediaComponent>>(EventDelegate::create<LayeredMediaSystem,&LayeredMediaSystem::onNewComponentEvent>(this));
     }
     
-    void LayeredMediaSystem::onDrawEvent(const IEventRef& event)
+    EventStatus LayeredMediaSystem::onDrawEvent(const IEventRef& event)
     {
         draw();
+        return EventStatus::SUCCESS;
     }
     
-    void LayeredMediaSystem::onNewComponentEvent(const IEventRef& event)
+    EventStatus LayeredMediaSystem::onNewComponentEvent(const IEventRef& event)
     {
         auto cast = std::static_pointer_cast<NewComponent<LayeredMediaComponent>>(event);
-        if(cast->getComponentType() == type_id<LayeredMediaComponent>){
+        if(cast->getComponentType() == &type_id<LayeredMediaComponent>){
             auto compHandle = cast->getComponentHandle();
             if(auto comp = compHandle.lock()){
                 auto layer = comp->getLayer();
                 insertIntoLayer(layer, std::move(compHandle));
             }
-        }else{
-            MS_LOG_ERROR("Something is wrong, the type_ids should match for in layered media system on new component!");
+            return EventStatus::SUCCESS;
         }
+        MS_LOG_ERROR("Something is wrong, the type_ids should match for in layered media system on new component!");
+        return EventStatus::FAILED;
     }
     
     void LayeredMediaSystem::draw()
@@ -72,7 +73,7 @@ namespace mediasystem {
                         auto model = component->getGlobalTransform();
                         auto c = component->getColor();
                         auto a = component->getAlpha();
-                        ofSetColor(ofFloatColor(c.r, c.g, c.b, a));
+                        ofSetColor(ofFloatColor(c.r, c.g, c.b, a * mGlobalAlpha));
                         ofPushMatrix();
                         ofMultMatrix(model);
                         component->draw();

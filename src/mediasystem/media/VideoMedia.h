@@ -29,9 +29,9 @@ namespace mediasystem {
         
     protected:
         
-        void start(Scene*);
-        void stop(Scene*);
-        void update(Scene*);
+        EventStatus start(const IEventRef&);
+        EventStatus stop(const IEventRef&);
+        EventStatus update(const IEventRef&);
         
         ofVideoPlayer mVideoPlayer;
         std::filesystem::path mVideoPath;

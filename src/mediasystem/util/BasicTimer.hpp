@@ -22,6 +22,10 @@ namespace mediasystem {
             const double getSeconds(){ 
                 return static_cast<double>(getNanos())/1000000000.0;
             }
+        
+            const double getMilliseconds(){
+                return static_cast<double>(getNanos())/1000000.0;
+            }
 
             const long getNanos(){
                 std::chrono::time_point<Clock> end;

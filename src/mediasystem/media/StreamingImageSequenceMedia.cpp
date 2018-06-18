@@ -138,11 +138,12 @@ namespace mediasystem {
         return glm::vec2(mCurrentImage.getWidth(), mCurrentImage.getHeight());
     }
         
-    void StreamingImageSequenceMedia::start(Scene*){
-        if(isPlaying() && !isPaused()) return;
+    EventStatus StreamingImageSequenceMedia::start(const IEventRef&){
+        if(isPlaying() && !isPaused()) EventStatus::SUCCESS;
         play();
         flushQueue();
         ofLogNotice() << mSeqPaths[0].string() << " starting!";
+        return EventStatus::SUCCESS;
     }
     
     bool StreamingImageSequenceMedia::isInit()const

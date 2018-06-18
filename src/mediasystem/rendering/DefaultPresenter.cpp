@@ -12,7 +12,6 @@ namespace mediasystem {
     
     void DefaultPresenter::begin()
     {
-        ofClear(0,0,0);
         ofPushStyle();
         ofEnableAlphaBlending();
     }

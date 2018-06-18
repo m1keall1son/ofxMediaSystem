@@ -18,7 +18,7 @@ namespace mediasystem {
         static const int NO_TIME_LIMIT = -1;
 
         using Ref = std::shared_ptr<TimedQueue>;
-        using DequeueHandler = std::function<void(T&)>;
+        using DequeueHandler = std::function<bool(T&)>;
         
         explicit TimedQueue(DequeueHandler handler, int maxDequeueTime = NO_TIME_LIMIT):
             mMaxDequeueTime(maxDequeueTime),
@@ -37,8 +37,12 @@ namespace mediasystem {
                     auto success = pop(val);
                     if(success){
                         ++count;
-                        if(mHandler)
-                            mHandler(val);
+                        bool ret = true;
+                        if(mHandler){
+                            ret = mHandler(val);
+                        }
+                        if(!ret)
+                            break;
                     }else{
                         if(count > 0){
                             elapsed += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count();
@@ -55,8 +59,12 @@ namespace mediasystem {
                     auto success = pop(val);
                     if(success){
                         ++count;
-                        if(mHandler)
-                            mHandler(val);
+                        bool ret = true;
+                        if(mHandler){
+                            ret = mHandler(val);
+                        }
+                        if(!ret)
+                            break;
                     }else{
                         if(count > 0){
                             elapsed += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count();

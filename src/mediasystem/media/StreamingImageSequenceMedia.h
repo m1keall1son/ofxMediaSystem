@@ -60,7 +60,7 @@ namespace mediasystem {
         
     private:
         
-        void start(Scene*)override;        
+        EventStatus start(const IEventRef&)override;        
         
         void flushQueue();
         

@@ -7,7 +7,7 @@
 
 #pragma once
 #include "ofMain.h"
-#include "mediasystem/core/Entity.hpp"
+#include "mediasystem/core/Entity.h"
 
 namespace mediasystem {
     

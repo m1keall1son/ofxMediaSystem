@@ -59,13 +59,15 @@ namespace mediasystem {
         std::map<type_id_t, std::shared_ptr<void>> mSystems;
     };
     
+    class Entity;
+    
     using ComponentMap = std::unordered_map<size_t, std::shared_ptr<void>>;
     
     class ComponentManager {
     public:
             
         template<typename ComponentType, typename...Args>
-        std::weak_ptr<ComponentType> createComponent(size_t entity_id, Args&&...args){
+        std::weak_ptr<ComponentType> create(size_t entity_id, Args&&...args){
             auto shared = std::make_shared<ComponentType>(std::forward<Args>(args)...);
             auto generic = std::static_pointer_cast<void>(shared);
             auto it = mComponents[type_id<ComponentType>].emplace( entity_id, std::move(generic) );
@@ -77,7 +79,7 @@ namespace mediasystem {
         }
         
         template<typename ComponentType>
-        std::weak_ptr<ComponentType> getComponent(size_t entity_id){
+        std::weak_ptr<ComponentType> retrieve(size_t entity_id){
             auto found = mComponents[type_id<ComponentType>].find(entity_id);
             if(found != mComponents[type_id<ComponentType>].end()){
                 auto cast = std::static_pointer_cast<ComponentType>(found->second);
@@ -87,8 +89,17 @@ namespace mediasystem {
             }
         }
         
+        std::weak_ptr<void> retrieve(type_id_t type, size_t entity_id){
+            auto found = mComponents[type].find(entity_id);
+            if(found != mComponents[type].end()){
+                return found->second;
+            }else{
+                return std::weak_ptr<void>();
+            }
+        }
+        
         template<typename ComponentType>
-        bool destroyComponent(size_t entity_id){
+        bool destroy(size_t entity_id){
             auto found = mComponents[type_id<ComponentType>].find(entity_id);
             if(found != mComponents[type_id<ComponentType>].end()){
                 mComponents[type_id<ComponentType>].erase(found);
@@ -98,13 +109,8 @@ namespace mediasystem {
             }
         }
         
-        bool destroyComponent(type_id_t type, size_t entity_id){
+        bool destroy(type_id_t type, size_t entity_id){
             auto& map = mComponents[type];
-            
-            for(auto& p : map){
-                p;
-            }
-            
             auto found = map.find(entity_id);
             if(found != mComponents[type].end()){
                 mComponents[type].erase(found);
@@ -117,6 +123,10 @@ namespace mediasystem {
         template<typename ComponentType>
         ComponentMap& getComponents(){
             return mComponents[type_id<ComponentType>];
+        }
+        
+        ComponentMap& getComponents(type_id_t type){
+            return mComponents[type];
         }
         
         void clear(){

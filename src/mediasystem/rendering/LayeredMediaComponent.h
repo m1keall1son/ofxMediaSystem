@@ -10,7 +10,6 @@
 #include <memory>
 #include "ofMain.h"
 #include "mediasystem/media/MediaBase.h"
-#include "mediasystem/core/Entity.hpp"
 
 namespace mediasystem {
     

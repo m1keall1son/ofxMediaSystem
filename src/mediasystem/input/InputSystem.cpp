@@ -6,25 +6,25 @@
 //
 
 #include "InputSystem.h"
-#include "mediasystem/core/Entity.hpp"
+#include "mediasystem/core/Entity.h"
+#include "mediasystem/core/Scene.h"
 #include "mediasystem/util/Log.h"
-#include "mediasystem/core/CoreEvents.h"
+#include "mediasystem/core/SceneEvents.h"
 #include "InputComponent.h"
 
 namespace mediasystem {
     
-    InputSystem::InputSystem(EventManager& eventManager):
-        mEventManager(eventManager)
+    InputSystem::InputSystem(Scene& context)
     {
-        mEventManager.addDelegate<UpdateEvent>(EventDelegate::create<InputSystem, &InputSystem::onUpdateEvent>(this));
-        mEventManager.addDelegate<InitSystem>(EventDelegate::create<InputSystem, &InputSystem::onInitEvent>(this));
-        mEventManager.addDelegate<NewComponent<InputComponent>>(EventDelegate::create<InputSystem, &InputSystem::onNewInputComponent>(this));
+        context.addDelegate<Update>(EventDelegate::create<InputSystem, &InputSystem::onUpdateEvent>(this));
+        context.addDelegate<Init>(EventDelegate::create<InputSystem, &InputSystem::onInitEvent>(this));
+        context.addDelegate<NewComponent<InputComponent>>(EventDelegate::create<InputSystem, &InputSystem::onNewInputComponent>(this));
     }
     
-    void InputSystem::onNewInputComponent(const IEventRef& event)
+    EventStatus InputSystem::onNewInputComponent(const IEventRef& event)
     {
         auto cast = std::static_pointer_cast<NewComponent<InputComponent>>(event);
-        if(cast->getComponentType() == type_id<InputComponent>){
+        if(cast->getComponentType() == &type_id<InputComponent>){
             auto compHandle = cast->getComponentHandle();
             if(auto comp = compHandle.lock()){
                 auto z_index = comp->getZIndex();
@@ -37,19 +37,22 @@ namespace mediasystem {
                     mComponentsByZIndex.emplace(z_index,std::move(l));
                 }
             }
-        }else{
-            MS_LOG_ERROR("Something is wrong, the type_ids should match for in inputsystem on new component!");
+            return EventStatus::SUCCESS;
         }
+        MS_LOG_ERROR("Something is wrong, the type_ids should match for in inputsystem on new component!");
+        return EventStatus::FAILED;
     }
     
-    void InputSystem::onInitEvent(const IEventRef& event)
+    EventStatus InputSystem::onInitEvent(const IEventRef& event)
     {
         connect();
+        return EventStatus::SUCCESS;
     }
 
-    void InputSystem::onUpdateEvent(const IEventRef& event)
+    EventStatus InputSystem::onUpdateEvent(const IEventRef& event)
     {
         update();
+        return EventStatus::SUCCESS;
     }
     
     void InputSystem::connect()

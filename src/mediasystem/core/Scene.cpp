@@ -1,26 +1,23 @@
 #include "Scene.h"
-#include "mediasystem/core/Entity.hpp"
-#include "mediasystem/core/MediaController.h"
+#include "mediasystem/core/Entity.h"
 #include "mediasystem/util/Util.h"
-#include "mediasystem/core/CoreEvents.h"
 
 namespace mediasystem {
 
-    Scene::Scene(MediaController& context, const std::string & name, float transition_time):
-        mController(context),
-        mName(name)
-    {
-        context.getEventManager().addDelegate<ShutdownSystem>(EventDelegate::create<Scene,&Scene::onShutdown>(this));
-        context.getEventManager().addDelegate<InitSystem>(EventDelegate::create<Scene,&Scene::onInit>(this));
-        context.getEventManager().addDelegate<PostInit>(EventDelegate::create<Scene,&Scene::onPostInit>(this));
-    }
+    Scene::Scene(const std::string & name, float transition_duration):
+        mName(name),
+        mTransitionInDuration(transition_duration),
+        mTransitionOutDuration(transition_duration)
+    {}
+    
+    Scene::Scene(const std::string & name, float transition_in_duration, float transition_out_duration ):
+        mName(name),
+        mTransitionInDuration(transition_in_duration),
+        mTransitionOutDuration(transition_out_duration)
+    {}
 
     Scene::~Scene()
-    {
-        mController.getEventManager().removeDelegate<ShutdownSystem>(EventDelegate::create<Scene,&Scene::onShutdown>(this));
-        mController.getEventManager().removeDelegate<InitSystem>(EventDelegate::create<Scene,&Scene::onInit>(this));
-        mController.getEventManager().removeDelegate<PostInit>(EventDelegate::create<Scene,&Scene::onPostInit>(this));
-    }
+    {}
     
     static size_t sNextEntityId = 0;
     
@@ -29,7 +26,7 @@ namespace mediasystem {
         auto next = sNextEntityId++;
         auto it = mEntities.emplace(next, EntityRef( new Entity(*this, next)));
         if(it.second){
-            mController.getEventManager().queueEvent(std::make_shared<NewEntity>(it.first->second));
+            queueEvent<NewEntity>(it.first->second);
             //everyone gets a node component, because why not
             it.first->second->createComponent<ofNode>();
             return it.first->second;
@@ -42,7 +39,7 @@ namespace mediasystem {
     {
         auto found = mEntities.find(id);
         if(found != mEntities.end()){
-            mController.getEventManager().queueEvent(std::make_shared<DestroyEntity>(found->second));
+            queueEvent<DestroyEntity>(found->second);
             mEntities.erase(found);
             return true;
         }
@@ -54,6 +51,7 @@ namespace mediasystem {
         if(auto ent = handle.lock()){
             return destroyEntity(ent->getId());
         }
+        return false;
     }
     
     EntityHandle Scene::getEntity(size_t id)
@@ -67,7 +65,12 @@ namespace mediasystem {
     }
     
     bool Scene::destroyComponent(type_id_t type, size_t entity_id){
-        return mController.destroyComponent(type, entity_id);
+        return mComponentManager.destroy(type, entity_id);
+    }
+    
+    std::weak_ptr<void> Scene::getComponent(type_id_t type, size_t entity_id)
+    {
+        return mComponentManager.retrieve(type, entity_id);
     }
     
     float Scene::getPercentTransitionComplete() const
@@ -81,43 +84,39 @@ namespace mediasystem {
         }
     }
     
-    void Scene::init()
-    {
-        mEvents[INIT](this);
-    }
-    
-    void Scene::postInit()
-    {
-        mEvents[POST_INIT](this);
-    }
-    
     void Scene::transitionIn()
     {
-        mTransitionDirection = TRANSITION_IN;
-        mIsTransitioning = true;
-        mTransitionStart = ofGetElapsedTimef();
-        mEvents[TRANSITION_IN_BEGIN](this);
+        if(mTransitionInDuration > 0){
+            mTransitionDirection = TRANSITION_IN;
+            mIsTransitioning = true;
+            mTransitionStart = ofGetElapsedTimef();
+            triggerEvent<TransitionInBegin>(*this);
+        }
         start();
     }
     
     void Scene::transitionOut()
     {
-        mTransitionDirection = TRANSITION_OUT;
-        mIsTransitioning = true;
-        mTransitionStart = ofGetElapsedTimef();
-        mEvents[TRANSITION_OUT_BEGIN](this);
+        if(mTransitionOutDuration > 0){
+            mTransitionDirection = TRANSITION_OUT;
+            mIsTransitioning = true;
+            mTransitionStart = ofGetElapsedTimef();
+            triggerEvent<TransitionOutBegin>(*this);
+        }else{
+            stop();
+        }
     }
     
     void Scene::transitionInComplete()
     {
         mIsTransitioning = false;
-        mEvents[TRANSITION_IN_END](this);
+        triggerEvent<TransitionInComplete>(*this);
     }
     
     void Scene::transitionOutComplete()
     {
         mIsTransitioning = false;
-        mEvents[TRANSITION_OUT_END](this);
+        triggerEvent<TransitionOutComplete>(*this);
         stop();
     }
     
@@ -136,35 +135,30 @@ namespace mediasystem {
                         return;
                 }
             }else{
-                mEvents[TRANSITION_UPDATE](this);
+                triggerEvent<TransitionUpdate>(*this);
             }
         }
-        mEvents[UPDATE](this);
+        auto now = ofGetElapsedTimef();
+        triggerEvent<Update>(*this,ofGetFrameNum(),now, now - mLastUpdateTime);
+        mLastUpdateTime = now;
+        //process any events queued by other systems and components, etc.
+        processEvents();
     }
     
     void Scene::start()
     {
         mHasStarted = true;
-        mEvents[START](this);
+        triggerEvent<Start>(*this);
     }
 
     void Scene::stop()
     {
         mHasStarted = false;
-        mEvents[STOP](this);
+        mIsTransitioning = false;
+        triggerEvent<Stop>(*this);
     }
     
-    void Scene::addDelegate(Scene::Events event, SceneEventDelegate delegate)
-    {
-        mEvents[event] += delegate;
-    }
-    
-    void Scene::removeDelegate(Scene::Events event, SceneEventDelegate delegate)
-    {
-        mEvents[event] -= delegate;
-    }
-    
-    float Scene::getTransitionDuration(Transition direction)const
+    float Scene::getTransitionDuration(TransitionDir direction)const
     {
         switch(direction){
             case TRANSITION_IN:
@@ -175,7 +169,7 @@ namespace mediasystem {
         return 0.f;
     }
     
-    void Scene::setTransitionDuration(Transition direction, float duration)
+    void Scene::setTransitionDuration(TransitionDir direction, float duration)
     {
         switch(direction){
             case TRANSITION_IN:
@@ -187,24 +181,34 @@ namespace mediasystem {
         }
     }
     
+    void Scene::init()
+    {
+        triggerEvent<Init>(*this);
+    }
+    
+    void Scene::postInit()
+    {
+        triggerEvent<PostInit>(*this);
+    }
+    
     void Scene::shutdown()
     {
+        triggerEvent<Shutdown>(*this);
+        mComponentManager.clear();
+        mSystemManager.clear();
         mEntities.clear();
+        clearQueues();
+        clearDelegates();
     }
     
-    void Scene::onInit(const IEventRef& event)
+    void Scene::draw()
     {
-        init();
+        triggerEvent<Draw>(*this);
     }
     
-    void Scene::onPostInit(const IEventRef& event)
+    void Scene::reset()
     {
-        postInit();
-    }
-    
-    void Scene::onShutdown(const IEventRef& event)
-    {
-        shutdown();
+        queueEvent<Reset>(*this);
     }
 
 }//end namespace mediasystem

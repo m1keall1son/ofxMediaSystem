@@ -8,7 +8,7 @@
 #include "ImageSequenceMediaBase.h"
 #include "mediasystem/util/Util.h"
 #include "mediasystem/core/Scene.h"
-#include "mediasystem/core/CoreEvents.h"
+#include "mediasystem/core/SceneEvents.h"
 
 namespace mediasystem {
     
@@ -17,41 +17,45 @@ namespace mediasystem {
         ImageSequenceBase(fps, options)
     {
         auto& scene = context.getScene();
-        scene.addDelegate(Scene::Events::START, SceneEventDelegate::create<ImageSequenceMediaBase, &ImageSequenceMediaBase::start>(this));
-        scene.addDelegate(Scene::Events::STOP, SceneEventDelegate::create<ImageSequenceMediaBase, &ImageSequenceMediaBase::stop>(this));
-        scene.addDelegate(Scene::Events::UPDATE, SceneEventDelegate::create<ImageSequenceMediaBase, &ImageSequenceMediaBase::update>(this));
+        scene.addDelegate<Start>(EventDelegate::create<ImageSequenceMediaBase, &ImageSequenceMediaBase::start>(this));
+        scene.addDelegate<Stop>(EventDelegate::create<ImageSequenceMediaBase, &ImageSequenceMediaBase::stop>(this));
+        scene.addDelegate<Update>(EventDelegate::create<ImageSequenceMediaBase, &ImageSequenceMediaBase::update>(this));
     }
     
     ImageSequenceMediaBase::~ImageSequenceMediaBase()
     {
         auto& scene = mContext.getScene();
-        scene.removeDelegate(Scene::Events::START, SceneEventDelegate::create<ImageSequenceMediaBase, &ImageSequenceMediaBase::start>(this));
-        scene.removeDelegate(Scene::Events::STOP, SceneEventDelegate::create<ImageSequenceMediaBase, &ImageSequenceMediaBase::stop>(this));
-        scene.removeDelegate(Scene::Events::UPDATE, SceneEventDelegate::create<ImageSequenceMediaBase, &ImageSequenceMediaBase::update>(this));
+        scene.removeDelegate<Start>(EventDelegate::create<ImageSequenceMediaBase, &ImageSequenceMediaBase::start>(this));
+        scene.removeDelegate<Stop>(EventDelegate::create<ImageSequenceMediaBase, &ImageSequenceMediaBase::stop>(this));
+        scene.removeDelegate<Update>(EventDelegate::create<ImageSequenceMediaBase, &ImageSequenceMediaBase::update>(this));
     }
     
-    void ImageSequenceMediaBase::start(Scene*)
+    EventStatus ImageSequenceMediaBase::start(const IEventRef&)
     {
         if(!mIsInit){
             init();
             mIsInit = true;
         }
         play();
+        return EventStatus::SUCCESS;
     }
     
-    void ImageSequenceMediaBase::stop(Scene*)
+    EventStatus ImageSequenceMediaBase::stop(const IEventRef&)
     {
         ImageSequenceBase::stop();
+        return EventStatus::SUCCESS;
     }
     
-    void ImageSequenceMediaBase::update(Scene*)
+    EventStatus ImageSequenceMediaBase::update(const IEventRef& event)
     {
+        auto updateEvent = std::static_pointer_cast<Update>(event);
         if(!mIsInit){
             init();
             mIsInit = true;
         }
-        auto val = ofGetLastFrameTime();
+        auto val = updateEvent->getLastFrameTime();
         step(val);
+        return EventStatus::SUCCESS;
     }
     
 }//end namespace mediasystem

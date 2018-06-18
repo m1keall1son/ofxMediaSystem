@@ -22,9 +22,9 @@ namespace mediasystem {
         
     protected:
                 
-        virtual void start(Scene*);
-        virtual void stop(Scene*);
-        virtual void update(Scene*);
+        virtual EventStatus start(const IEventRef&);
+        virtual EventStatus stop(const IEventRef&);
+        virtual EventStatus update(const IEventRef&);
         
         bool mIsInit{false};
         

@@ -1,0 +1,148 @@
+//
+//  SceneEvents.h
+//  WallTest
+//
+//  Created by Michael Allison on 6/11/18.
+//
+
+#pragma once
+
+#include <string>
+#include "mediasystem/events/IEvent.h"
+#include "mediasystem/core/TypeID.hpp"
+
+namespace mediasystem {
+    
+    class Scene;
+    class Entity;
+    using EntityHandle = std::weak_ptr<Entity>;
+    
+    //sent each time a scene adds a new entity
+    class NewEntity : public Event<NewEntity> {
+    public:
+        NewEntity(EntityHandle&& entity):mEntity(std::move(entity)){}
+        NewEntity(const EntityHandle& entity):mEntity(entity){}
+        inline EntityHandle getEntity(){ return mEntity; }
+    private:
+        EntityHandle mEntity;
+    };
+    
+    //sent each time a scene destroys an existing entity
+    class DestroyEntity : public Event<DestroyEntity> {
+    public:
+        DestroyEntity(EntityHandle&& entity):mEntity(std::move(entity)){}
+        DestroyEntity(const EntityHandle& entity):mEntity(entity){}
+        inline EntityHandle getEntity(){ return mEntity; }
+    private:
+        EntityHandle mEntity;
+    };
+    
+    //sent each time an entity adds a component of a specific type
+    template<typename ComponentType>
+    class NewComponent : public Event<NewComponent<ComponentType>> {
+    public:
+        NewComponent(std::weak_ptr<ComponentType>&& comp):mComponent(std::move(comp)){}
+        NewComponent(const std::weak_ptr<ComponentType>& comp):mComponent(comp){}
+        inline type_id_t getComponentType(){ return type_id<ComponentType>; }
+        std::weak_ptr<ComponentType> getComponentHandle(){ return mComponent; }
+    private:
+        std::weak_ptr<ComponentType> mComponent;
+    };
+    
+    template<typename Self>
+    class SceneEvent : public Event<Self> {
+    public:
+        SceneEvent(Scene& scene):mScene(scene){}
+        Scene& getScene(){ return mScene; }
+    private:
+        Scene& mScene;
+    };
+
+    //will cause the current scene to transition out and the scene designated in the message to
+    //transition in
+    class SceneChange : public SceneEvent<SceneChange> {
+    public:
+        SceneChange(Scene& current_scene, std::string next_sene);
+        SceneChange(Scene& current_scene, std::shared_ptr<Scene> next_sene);
+        const std::string& getNextSceneName()const{ return mNextSceneName; }
+        std::shared_ptr<Scene> getNextScene(){ return mNextScene; }
+    private:
+        std::shared_ptr<Scene> mNextScene{nullptr};
+        std::string mNextSceneName;
+    };
+ 
+    class Init : public SceneEvent<Init> {
+    public:
+        Init(Scene& scene):SceneEvent<Init>(scene){}
+    };
+    
+    class PostInit : public SceneEvent<PostInit> {
+    public:
+        PostInit(Scene& scene):SceneEvent<PostInit>(scene){}
+    };
+    
+    class Shutdown : public SceneEvent<Shutdown> {
+    public:
+        Shutdown(Scene& scene):SceneEvent<Shutdown>(scene){}
+    };
+    
+    class Reset : public SceneEvent<Reset> {
+    public:
+        Reset(Scene& scene):SceneEvent<Reset>(scene){}
+    };
+    
+    class Start : public SceneEvent<Start> {
+    public:
+        Start(Scene& scene):SceneEvent<Start>(scene){}
+    };
+    
+    class Stop : public SceneEvent<Stop>  {
+    public:
+        Stop(Scene& scene):SceneEvent<Stop>(scene){}
+    };
+    
+    class Update : public SceneEvent<Update> {
+    public:
+        Update(Scene& scene, uint64_t elapsedFrames, double elapsedTime, double lastFrameTime );
+        virtual ~Update() = default;
+        inline uint64_t getElapsedFrames()const{ return mElapsedFrames; };
+        inline double getElapsedTime()const{ return mElapsedTime; };
+        inline double getLastFrameTime()const { return mLastFrameTime; }
+    private:
+        uint64_t mElapsedFrames;
+        double mElapsedTime;
+        double mLastFrameTime;
+    };
+    
+    //draws all subscribers
+    class Draw : public SceneEvent<Draw> {
+    public:
+        Draw(Scene& scene):SceneEvent<Draw>(scene){}
+    };
+    
+    class TransitionInBegin : public SceneEvent<TransitionInBegin> {
+    public:
+        TransitionInBegin(Scene& scene):SceneEvent<TransitionInBegin>(scene){}
+    };
+    
+    class TransitionInComplete : public SceneEvent<TransitionInComplete> {
+    public:
+        TransitionInComplete(Scene& scene):SceneEvent<TransitionInComplete>(scene){}
+    };
+    
+    class TransitionOutBegin : public SceneEvent<TransitionOutBegin> {
+    public:
+        TransitionOutBegin(Scene& scene):SceneEvent<TransitionOutBegin>(scene){}
+    };
+    
+    class TransitionOutComplete : public SceneEvent<TransitionOutComplete> {
+    public:
+        TransitionOutComplete(Scene& scene):SceneEvent<TransitionOutComplete>(scene){}
+    };
+    
+    class TransitionUpdate : public SceneEvent<TransitionUpdate> {
+    public:
+        TransitionUpdate(Scene& scene):SceneEvent<TransitionUpdate>(scene){}
+    };
+
+}//end namespace mediasystem

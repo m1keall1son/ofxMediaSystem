@@ -16,17 +16,17 @@ namespace mediasystem {
         mVideoPath(std::move(path))
     {
         auto& scene = context.getScene();
-        scene.addDelegate(Scene::Events::START, SceneEventDelegate::create<VideoMedia, &VideoMedia::start>(this));
-        scene.addDelegate(Scene::Events::STOP, SceneEventDelegate::create<VideoMedia, &VideoMedia::stop>(this));
-        scene.addDelegate(Scene::Events::UPDATE, SceneEventDelegate::create<VideoMedia, &VideoMedia::update>(this));
+        scene.addDelegate<Start>(EventDelegate::create<VideoMedia, &VideoMedia::start>(this));
+        scene.addDelegate<Stop>(EventDelegate::create<VideoMedia, &VideoMedia::stop>(this));
+        scene.addDelegate<Update>(EventDelegate::create<VideoMedia, &VideoMedia::update>(this));
     }
     
     VideoMedia::~VideoMedia()
     {
         auto& scene = mContext.getScene();
-        scene.removeDelegate(Scene::Events::START, SceneEventDelegate::create<VideoMedia, &VideoMedia::start>(this));
-        scene.removeDelegate(Scene::Events::STOP, SceneEventDelegate::create<VideoMedia, &VideoMedia::stop>(this));
-        scene.removeDelegate(Scene::Events::UPDATE, SceneEventDelegate::create<VideoMedia, &VideoMedia::update>(this));
+        scene.removeDelegate<Start>(EventDelegate::create<VideoMedia, &VideoMedia::start>(this));
+        scene.removeDelegate<Stop>(EventDelegate::create<VideoMedia, &VideoMedia::stop>(this));
+        scene.removeDelegate<Update>(EventDelegate::create<VideoMedia, &VideoMedia::update>(this));
     }
     
     glm::vec2 VideoMedia::getMediaSize() const
@@ -118,23 +118,26 @@ namespace mediasystem {
             ofNoFill();
     }
     
-    void VideoMedia::start(Scene*)
+    EventStatus VideoMedia::start(const IEventRef&)
     {
         if(!mIsInit)
             init();
         mVideoPlayer.play();
+        return EventStatus::SUCCESS;
     }
     
-    void VideoMedia::stop(Scene*)
+    EventStatus VideoMedia::stop(const IEventRef&)
     {
         mVideoPlayer.stop();
+        return EventStatus::SUCCESS;
     }
     
-    void VideoMedia::update(Scene*)
+    EventStatus VideoMedia::update(const IEventRef&)
     {
         if(!mIsInit)
             init();
         mVideoPlayer.update();
+        return EventStatus::SUCCESS;
     }
     
 }//end namespace mediasystem

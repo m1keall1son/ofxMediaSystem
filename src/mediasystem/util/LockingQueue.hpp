@@ -7,6 +7,7 @@
 
 #pragma once
 #include <deque>
+#include <atomic>
 #include <mutex>
 #include <memory>
 #include <algorithm>
