@@ -6,6 +6,7 @@
 #include "mediasystem/core/Scene.h"
 #include "mediasystem/util/Util.h"
 #include "mediasystem/util/Singleton.hpp"
+#include "mediasystem/media/MediaComponent.h"
 #include "mediasystem/media/ImageMedia.h"
 #include "mediasystem/media/ImageSequenceMedia.h"
 #include "mediasystem/media/StreamingImageSequenceMedia.h"

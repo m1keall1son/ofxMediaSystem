@@ -136,6 +136,7 @@ namespace mediasystem {
                         return;
                 }
             }else{
+                transitionUpdate();
                 triggerEvent<TransitionUpdate>(*this);
             }
         }

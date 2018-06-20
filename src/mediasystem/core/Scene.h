@@ -34,6 +34,7 @@ namespace mediasystem {
         virtual void postInit();
         
         virtual void transitionIn();
+        virtual void transitionUpdate(){}
         virtual void transitionOut();
         
         virtual void update();
@@ -44,10 +45,10 @@ namespace mediasystem {
 		
         inline const std::string& getName() const { return mName; }
         
-        EntityHandle createEntity();
-        bool destroyEntity(size_t id);
-        bool destroyEntity(EntityHandle handle);
-        EntityHandle getEntity(size_t id);
+        virtual EntityHandle createEntity();
+        virtual bool destroyEntity(size_t id);
+        virtual bool destroyEntity(EntityHandle handle);
+        virtual EntityHandle getEntity(size_t id);
 
         template<typename SystemType, typename...Args>
         std::shared_ptr<SystemType> createSystem(Args&&...args)
@@ -84,9 +85,8 @@ namespace mediasystem {
             return mComponentManager.retrieve<Component>(entity_id);
         }
         
-        std::weak_ptr<void> getComponent(type_id_t type, size_t entity_id);
-        std::weak_ptr<void> cloneComponent(type_id_t type, size_t dst_entity_id, const std::shared_ptr<void>& src_comp);
-        bool destroyComponent(type_id_t type, size_t entity_id);
+        virtual std::weak_ptr<void> getComponent(type_id_t type, size_t entity_id);
+        virtual bool destroyComponent(type_id_t type, size_t entity_id);
 
         inline bool hasStarted() const { return mHasStarted; }
         
