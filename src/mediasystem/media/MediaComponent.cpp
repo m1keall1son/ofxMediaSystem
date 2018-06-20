@@ -1,19 +1,15 @@
 //
-//  RenderComponent.cpp
+//  MediaComponent.cpp
 //  WallTest
 //
-//  Created by Michael Allison on 6/12/18.
+//  Created by Michael Allison on 6/19/18.
 //
 
-#include "LayeredMediaComponent.h"
-#include "mediasystem/core/Entity.h"
-#include "ofMain.h"
+#include "MediaComponent.h"
 
 namespace mediasystem {
     
-    LayeredMediaComponent::LayeredMediaComponent(Entity& context, std::shared_ptr<MediaBase> media, RectMode mode, TextureMode tc ):
-        mContext(context),
-        mNode(context.getComponent<ofNode>()),
+    MediaComponent::MediaComponent(std::shared_ptr<MediaBase> media, RectMode mode, TextureMode tc ):
         mMedia(std::move(media)),
         mRectMode(mode),
         mTexMode(tc)
@@ -23,9 +19,7 @@ namespace mediasystem {
         setRect(size.x, size.y, size.x, size.y);
     }
     
-    LayeredMediaComponent::LayeredMediaComponent(Entity& context, std::shared_ptr<MediaBase> media, float width, float height, RectMode mode, TextureMode tc ):
-        mContext(context),
-        mNode(context.getComponent<ofNode>()),
+    MediaComponent::MediaComponent(std::shared_ptr<MediaBase> media, float width, float height, RectMode mode, TextureMode tc ):
         mMedia(std::move(media)),
         mRectMode(mode),
         mTexMode(tc)
@@ -35,7 +29,7 @@ namespace mediasystem {
         setRect(width, height, size.x, size.y);
     }
     
-    void LayeredMediaComponent::setRect(float width, float height, float mediaW, float mediaH)
+    void MediaComponent::setRect(float width, float height, float mediaW, float mediaH)
     {
         mRect.clear();
         
@@ -83,57 +77,48 @@ namespace mediasystem {
             }break;
         }
     }
-    
-    glm::mat4 LayeredMediaComponent::getGlobalTransform()
-    {
-        glm::mat4 ret;
-        if(auto node = mNode.lock()){
-            ret = node->getGlobalTransformMatrix();
-        }
-        return ret;
-    }
-    
-    void LayeredMediaComponent::setRectMode(RectMode mode)
+
+    void MediaComponent::setRectMode(RectMode mode)
     {
         mRectMode = mode;
         auto size = mMedia->getMediaSize();
         setRect(mDebugRect.width, mDebugRect.height, size.x, size.y);
     }
     
-    LayeredMediaComponent::RectMode LayeredMediaComponent::getRectMode()const
+    MediaComponent::RectMode MediaComponent::getRectMode()const
     {
         return mRectMode;
     }
     
-    glm::vec2 LayeredMediaComponent::getSize() const
+    glm::vec2 MediaComponent::getSize() const
     {
         return glm::vec2(mDebugRect.width, mDebugRect.height);
     }
     
-    ofRectangle LayeredMediaComponent::getRect() const
+    ofRectangle MediaComponent::getRect() const
     {
         return mDebugRect;
     }
     
-    void LayeredMediaComponent::setSize(float w, float h)
+    void MediaComponent::setSize(float w, float h)
     {
         auto size = mMedia->getMediaSize();
         setRect(w, h, size.x, size.y);
     }
     
-    void LayeredMediaComponent::draw()
+    void MediaComponent::draw()
     {
         mMedia->bind();
         mRect.draw();
         mMedia->unbind();
     }
     
-    void LayeredMediaComponent::debugDraw()
-    {
-        mMedia->debugDraw(mDebugRect, glm::min(mDebugRect.height/10.f, 12.f));
-    }
+//    void MediaComponent::debugDraw()
+//    {
+//        mMedia->debugDraw(mDebugRect, glm::min(mDebugRect.height/10.f, 12.f));
+//    }
     
-    glm::vec2 LayeredMediaComponent::getMediaSize()
+    glm::vec2 MediaComponent::getMediaSize()
     {
         return mMedia->getMediaSize();
     }

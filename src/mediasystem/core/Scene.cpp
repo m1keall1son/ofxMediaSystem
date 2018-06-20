@@ -29,6 +29,7 @@ namespace mediasystem {
             queueEvent<NewEntity>(it.first->second);
             //everyone gets a node component, because why not
             it.first->second->createComponent<ofNode>();
+            it.first->second->createComponent<EntityGraph>(*it.first->second);
             return it.first->second;
         }else{
             return EntityHandle();

@@ -10,15 +10,27 @@
 #include "mediasystem/core/Scene.h"
 #include "mediasystem/util/Log.h"
 #include "mediasystem/util/Util.h"
+#include "mediasystem/core/GlobalEvents.h"
 
 namespace mediasystem {
     
     SceneManager::SceneManager()
-    {}
+    {
+        auto& global_em = GlobalEventManager::get();
+        global_em.addDelegate<SystemInit>(EventDelegate::create<SceneManager, &SceneManager::onSystemInit>(this));
+        global_em.addDelegate<SystemPostInit>(EventDelegate::create<SceneManager, &SceneManager::onSystemPostInit>(this));
+        global_em.addDelegate<SystemReset>(EventDelegate::create<SceneManager, &SceneManager::onSystemReset>(this));
+        global_em.addDelegate<SystemShutdown>(EventDelegate::create<SceneManager, &SceneManager::onSystemShutdown>(this));
+    }
     
     SceneManager::~SceneManager()
     {
         shutdownScenes();
+        auto& global_em = GlobalEventManager::get();
+        global_em.removeDelegate<SystemInit>(EventDelegate::create<SceneManager, &SceneManager::onSystemInit>(this));
+        global_em.removeDelegate<SystemPostInit>(EventDelegate::create<SceneManager, &SceneManager::onSystemPostInit>(this));
+        global_em.removeDelegate<SystemReset>(EventDelegate::create<SceneManager, &SceneManager::onSystemReset>(this));
+        global_em.removeDelegate<SystemShutdown>(EventDelegate::create<SceneManager, &SceneManager::onSystemShutdown>(this));
     }
 
     void SceneManager::shutdownScenes()
@@ -44,6 +56,34 @@ namespace mediasystem {
         for(auto & scene : mScenes){
             scene->postInit();
         }
+    }
+    
+    EventStatus SceneManager::onSystemInit(const IEventRef&)
+    {
+        for(auto & scene : mScenes){
+            scene->init();
+        }
+        return EventStatus::SUCCESS;
+    }
+    
+    EventStatus SceneManager::onSystemPostInit(const IEventRef&)
+    {
+        for(auto & scene : mScenes){
+            scene->postInit();
+        }
+        return EventStatus::SUCCESS;
+    }
+    
+    EventStatus SceneManager::onSystemReset(const IEventRef&)
+    {
+        resetScenes();
+        return EventStatus::SUCCESS;
+    }
+    
+    EventStatus SceneManager::onSystemShutdown(const IEventRef&)
+    {
+        shutdownScenes();
+        return EventStatus::SUCCESS;
     }
     
     std::shared_ptr<Scene> SceneManager::createScene(const std::string& name, int eventDequeuTimeLimit)
@@ -99,6 +139,7 @@ namespace mediasystem {
             
         }else{
             mCurrentScene = mNextScene;
+            mNextScene = nullptr;
             mCurrentScene->transitionIn();
         }
     }
@@ -132,6 +173,10 @@ namespace mediasystem {
     
     void SceneManager::update()
     {
+        //the global event manager
+        auto& global_em = GlobalEventManager::get();
+        global_em.processEvents();
+        
         if(mCurrentScene)
             mCurrentScene->update();
         

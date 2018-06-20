@@ -18,6 +18,20 @@ namespace mediasystem {
     using EntityRef = std::shared_ptr<Entity>;
     using EntityHandle = std::weak_ptr<Entity>;
     
+    struct EntityGraph {
+        EntityGraph(Entity& me);
+        ~EntityGraph();
+        
+        Entity& self;
+        EntityHandle parent;
+        std::list<EntityHandle> children;
+        
+        void setParent(EntityHandle p, bool keepGlobalPosition = true);
+        void clearParent(bool keepGlobalPosition = true);
+        void addChild(EntityHandle child);
+        void removeChild(EntityHandle child, bool keepGlobalPosition = true);
+    };
+    
     class Entity {
     public:
         
@@ -72,10 +86,55 @@ namespace mediasystem {
         }
         
         template<typename Component>
-        std::weak_ptr<Component> getComponent(){
+        std::shared_ptr<Component> getComponent() const{
+            return mScene.getComponent<Component>(mId).lock();
+        }
+        
+        template<typename Component>
+        std::weak_ptr<Component> getComponentHandle() const{
             return mScene.getComponent<Component>(mId);
         }
         
+        //graph component pass through
+        void setParent(EntityHandle parent, bool bMaintainGlobalTransform = false);
+        EntityHandle getParent() const;
+        void clearParent(bool bMaintainGlobalTransform = false);
+        void addChild(EntityHandle child);
+        void removeChild(EntityHandle child);
+        std::list<EntityHandle>& getChildren();
+
+        //node component pass through
+        void setPosition(float px, float py, float pz);
+        void setPosition(const glm::vec3& p);
+        glm::vec3 getPosition() const;
+
+        void setGlobalPosition(float px, float py, float pz);
+        void setGlobalPosition(const glm::vec3& p);
+        glm::vec3 getGlobalPosition() const;
+
+        void setOrientation(const glm::quat& q);
+        void setOrientation(const glm::vec3& eulerAngles);
+        glm::vec3 getOrientationEulerRad() const;
+        glm::vec3 getOrientationEulerDeg() const;
+        glm::quat getOrientationQuat() const;
+        glm::vec3 getUpDir() const;
+        glm::vec3 getLookAtDir()const;
+        glm::vec3 getZAxis() const;
+        glm::vec3 getYAxis() const;
+        glm::vec3 getXAxis() const;
+
+        void setGlobalOrientation(const glm::quat& q);
+        glm::quat getGlobalOrientation() const;
+
+        void setScale(float s);
+        void setScale(float sx, float sy, float sz);
+        void setScale(const glm::vec3& s);
+        glm::vec3 getScale() const;
+        glm::vec3 getGlobalScale() const;
+        
+        glm::mat4 getGlobalTransformMatrix() const;
+        const glm::mat4& getLocalTransformMatrix() const;
+
     private:
         
         static std::map<type_id_t, size_t> sComponentIds;
@@ -86,8 +145,9 @@ namespace mediasystem {
             if(found != sComponentIds.end()){
                 return found->second;
             }else{
+                auto typeID = type_id<ComponentType>;
                 auto flag = sNextComponentId++;
-                sComponentIds.insert({type_id<ComponentType>, flag});
+                sComponentIds.insert({typeID, flag});
                 return flag;
             }
         }

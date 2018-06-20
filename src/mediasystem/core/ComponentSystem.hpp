@@ -14,6 +14,15 @@
 
 namespace mediasystem {
     
+    template<typename T, typename U>
+    std::weak_ptr<T> convertHandle( const std::weak_ptr<U>& generic ){
+        if(auto locked = generic.lock()){
+            return std::static_pointer_cast<T>(locked);
+        }
+        return std::weak_ptr<T>();
+    }
+    
+    //todo system manager doesn't make much sense, shuold it return handles instead of shared ptrs?
     class SystemManager {
     public:
         
@@ -59,9 +68,24 @@ namespace mediasystem {
         std::map<type_id_t, std::shared_ptr<void>> mSystems;
     };
     
-    class Entity;
+    using GenericComponentMap = std::unordered_map<size_t, std::shared_ptr<void>>;
     
-    using ComponentMap = std::unordered_map<size_t, std::shared_ptr<void>>;
+    template<typename ComponentType>
+    class ComponentMap {
+    public:
+        using iterator = typename std::unordered_map<size_t,std::shared_ptr<ComponentType>>::iterator;
+        using const_iterator = typename std::unordered_map<size_t,std::shared_ptr<ComponentType>>::const_iterator;
+        const_iterator cend()const{ return static_cast<const_iterator>(mComponents.cend()); }
+        const_iterator cbegin()const{ return static_cast<const_iterator>(mComponents.cbegin()); }
+        iterator end(){ return static_cast<iterator>(mComponents.end()); }
+        iterator begin(){ return static_cast<iterator>(mComponents.begin()); }
+        size_t size() const { return mComponents.size(); }
+        bool empty() const { return mComponents.empty(); }
+    private:
+        ComponentMap(GenericComponentMap& components):mComponents(components){}
+        GenericComponentMap& mComponents;
+        friend class ComponentManager;
+    };
     
     class ComponentManager {
     public:
@@ -121,11 +145,11 @@ namespace mediasystem {
         }
         
         template<typename ComponentType>
-        ComponentMap& getComponents(){
-            return mComponents[type_id<ComponentType>];
+        ComponentMap<ComponentType> getComponents(){
+            return ComponentMap<ComponentType>(mComponents[type_id<ComponentType>]);
         }
         
-        ComponentMap& getComponents(type_id_t type){
+        GenericComponentMap& getComponents(type_id_t type){
             return mComponents[type];
         }
         
@@ -134,7 +158,7 @@ namespace mediasystem {
         }
         
     private:
-        std::map<type_id_t, ComponentMap> mComponents;
+        std::map<type_id_t, GenericComponentMap> mComponents;
     };
     
 }//end namespace mediasystem

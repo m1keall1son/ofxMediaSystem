@@ -54,6 +54,11 @@ namespace mediasystem {
         
         EventStatus onChangeScene(const IEventRef& sceneChange);
         
+        EventStatus onSystemInit(const IEventRef&);
+        EventStatus onSystemPostInit(const IEventRef&);
+        EventStatus onSystemReset(const IEventRef&);
+        EventStatus onSystemShutdown(const IEventRef&);
+
         void transition();
         EventStatus swapScenes(const IEventRef&);
 
