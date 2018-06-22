@@ -50,14 +50,14 @@ namespace mediasystem {
         if(check(mouse)){
             
             if(mHovering){
-                if(mHandlers.mOnMouseHover)
+                if(mHandlers.mOnMouseHover && mEnabled)
                     mHandlers.mOnMouseHover(mContext, mouse);
                 return true;
             }
             
             if(!mHovering){
                 mHovering = true;
-                if(mHandlers.mOnMouseIn)
+                if(mHandlers.mOnMouseIn && mEnabled)
                     mHandlers.mOnMouseIn(mContext, mouse);
             }
             
@@ -66,7 +66,7 @@ namespace mediasystem {
         }else{
             if(mHovering){
                 mHovering = false;
-                if(mHandlers.mOnMouseOut)
+                if(mHandlers.mOnMouseOut && mEnabled)
                     mHandlers.mOnMouseOut(mContext, mouse);
             }
             return false;
@@ -87,9 +87,10 @@ namespace mediasystem {
     bool InputComponent::mouseDragged(const ofMouseEventArgs& mouse)
     {
         //todo, if not pressed, does it pick it up?
-        if(mPressed && mHandlers.mOnMouseDragged){
+        if(mPressed){
             mDragState.delta = mouse - mDragState.mouseStart;
-            mHandlers.mOnMouseDragged(mContext, mouse, mDragState);
+            if(mHandlers.mOnMouseDragged && mEnabled)
+                mHandlers.mOnMouseDragged(mContext, mouse, mDragState);
             return true;
         }
         return false;
@@ -104,7 +105,7 @@ namespace mediasystem {
                 mDragState.mouseStart = mouse;
                 mDragState.positionStart = glm::vec2(mNode.lock()->getPosition());
                 mDragState.delta = glm::vec2(0);
-                if(mHandlers.mOnMousePressed)
+                if(mHandlers.mOnMousePressed && mEnabled)
                     mHandlers.mOnMousePressed(mContext, mouse);
                 return true;
             }
@@ -116,11 +117,11 @@ namespace mediasystem {
     {
         if(mPressed){
             mPressed = false;
-            if(mHandlers.mOnMouseReleased)
+            if(mHandlers.mOnMouseReleased && mEnabled)
                 mHandlers.mOnMouseReleased(mContext, mouse);
             if(check(mouse)){
                 mHovering = true;
-                if(mHandlers.mOnMouseHover)
+                if(mHandlers.mOnMouseHover && mEnabled)
                     mHandlers.mOnMouseHover(mContext, mouse);
             }
             return true;
@@ -130,7 +131,7 @@ namespace mediasystem {
     
     bool InputComponent::mouseScrollWheel(const ofMouseEventArgs& mouse)
     {
-        if((mPressed || mHovering) && mHandlers.mOnMouseScrollWheel ){
+        if((mPressed || mHovering) && mHandlers.mOnMouseScrollWheel && mEnabled){
             mHandlers.mOnMouseScrollWheel(mContext, mouse);
             return true;
         }
@@ -139,13 +140,13 @@ namespace mediasystem {
     
     void InputComponent::keyPressed(const ofKeyEventArgs& key)
     {
-        if(mHandlers.mOnKeyPressed)
+        if(mHandlers.mOnKeyPressed && mEnabled)
             mHandlers.mOnKeyPressed(mContext, key);
     }
     
     void InputComponent::keyReleased(const ofKeyEventArgs& key)
     {
-        if(mHandlers.mOnKeyReleased)
+        if(mHandlers.mOnKeyReleased && mEnabled)
             mHandlers.mOnKeyReleased(mContext, key);
     }
     

@@ -4,7 +4,7 @@
 #include <memory>
 #include <map>
 #include "mediasystem/events/EventManager.h"
-#include "mediasystem/core/SceneEvents.h"
+#include "mediasystem/events/SceneEvents.h"
 #include "mediasystem/core/ComponentSystem.hpp"
 #include "mediasystem/core/Scene.h"
 
@@ -39,8 +39,8 @@ namespace mediasystem {
         
         std::shared_ptr<Scene> createScene(const std::string& name, int eventDequeuTimeLimit = TimedQueue<IEventRef>::NO_TIME_LIMIT);
         
-        void changeScene(const std::string& scene);
-        void changeScene(std::shared_ptr<Scene> scene);
+        void changeSceneTo(const std::string& scene);
+        void changeSceneTo(std::shared_ptr<Scene> scene);
         void addScene(std::shared_ptr<Scene> scene);
         void destroyScene(const std::string& name);
         void destroyScene(const std::shared_ptr<Scene>& scene);

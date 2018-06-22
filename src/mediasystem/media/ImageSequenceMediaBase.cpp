@@ -8,7 +8,7 @@
 #include "ImageSequenceMediaBase.h"
 #include "mediasystem/util/Util.h"
 #include "mediasystem/core/Scene.h"
-#include "mediasystem/core/SceneEvents.h"
+#include "mediasystem/events/SceneEvents.h"
 
 namespace mediasystem {
     

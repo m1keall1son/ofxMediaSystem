@@ -4,7 +4,7 @@
 #include "ofMain.h"
 #include "mediasystem/events/EventManager.h"
 #include "mediasystem/core/ComponentSystem.hpp"
-#include "mediasystem/core/SceneEvents.h"
+#include "mediasystem/events/SceneEvents.h"
 
 namespace mediasystem {
     
@@ -30,19 +30,18 @@ namespace mediasystem {
         Scene(const Scene&) = delete;
         Scene& operator=(const Scene&) = delete;
         
-        virtual void init();
-        virtual void postInit();
+        void notifyInit();
+        void notifyPostInit();
         
-        virtual void transitionIn();
-        virtual void transitionUpdate(){}
-        virtual void transitionOut();
+        void notifyTransitionIn();
+        void notifyTransitionOut();
         
-        virtual void update();
-        virtual void draw();
+        void notifyUpdate();
+        void notifyDraw();
         
-        virtual void shutdown();
-        virtual void reset();
-		
+        void notifyShutdown();
+        void notifyReset();
+        
         inline const std::string& getName() const { return mName; }
         
         virtual EntityHandle createEntity();
@@ -85,6 +84,11 @@ namespace mediasystem {
             return mComponentManager.retrieve<Component>(entity_id);
         }
         
+        template<typename ComponentType>
+        ComponentMap<ComponentType> getComponents(){
+            return mComponentManager.getComponents<ComponentType>();
+        }
+        
         virtual std::weak_ptr<void> getComponent(type_id_t type, size_t entity_id);
         virtual bool destroyComponent(type_id_t type, size_t entity_id);
 
@@ -98,16 +102,36 @@ namespace mediasystem {
         
 	protected:
         
-        virtual void start();
-        virtual void stop();
+        virtual void init(){}
+        virtual void postInit(){}
         
-        virtual void transitionInComplete();
-        virtual void transitionOutComplete();
+        virtual void transitionIn(){}
+        virtual void transitionUpdate(){}
+        virtual void transitionOut(){}
+        
+        virtual void update(){}
+        virtual void draw(){}
+        
+        virtual void shutdown(){}
+        virtual void reset(){}
+        
+        virtual void start(){}
+        virtual void stop(){}
+        
+        virtual void transitionInComplete(){}
+        virtual void transitionOutComplete(){}
         
 		std::string	mName;
         std::unordered_map<size_t, EntityRef> mEntities;
 
 	private:
+        
+        void notifyStart();
+        void notifyStop();
+        
+        void notifyTransitionInComplete();
+        void notifyTransitionOutComplete();
+        
         TransitionDir mTransitionDirection{TRANSITION_IN};
         bool mIsTransitioning{false};
         float mTransitionInDuration{0.f};

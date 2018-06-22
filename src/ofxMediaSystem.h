@@ -4,6 +4,7 @@
 #include "mediasystem/rendering/LayeredRenderer.hpp"
 #include "mediasystem/input/InputSystem.h"
 #include "mediasystem/core/Scene.h"
+#include "mediasystem/events/GlobalEvents.h"
 #include "mediasystem/util/Util.h"
 #include "mediasystem/util/Singleton.hpp"
 #include "mediasystem/media/MediaComponent.h"

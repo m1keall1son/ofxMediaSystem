@@ -70,20 +70,36 @@ namespace mediasystem {
     
     using GenericComponentMap = std::unordered_map<size_t, std::shared_ptr<void>>;
     
+    //adapter class
     template<typename ComponentType>
     class ComponentMap {
     public:
-        using iterator = typename std::unordered_map<size_t,std::shared_ptr<ComponentType>>::iterator;
-        using const_iterator = typename std::unordered_map<size_t,std::shared_ptr<ComponentType>>::const_iterator;
-        const_iterator cend()const{ return static_cast<const_iterator>(mComponents.cend()); }
-        const_iterator cbegin()const{ return static_cast<const_iterator>(mComponents.cbegin()); }
-        iterator end(){ return static_cast<iterator>(mComponents.end()); }
-        iterator begin(){ return static_cast<iterator>(mComponents.begin()); }
-        size_t size() const { return mComponents.size(); }
-        bool empty() const { return mComponents.empty(); }
+        
+        ComponentMap() = default;
+        
+        class iterator {
+        public:
+            std::shared_ptr<ComponentType> next(){
+                if(mIt == mEnd)
+                    return nullptr;
+                return std::static_pointer_cast<ComponentType>((*mIt++).second);
+            }
+        private:
+            iterator() = default;
+            iterator( std::unordered_map<size_t, std::shared_ptr<void>>::iterator begin, std::unordered_map<size_t, std::shared_ptr<void>>::iterator end ):mIt(begin),mEnd(){}
+            
+            std::unordered_map<size_t, std::shared_ptr<void>>::iterator mIt;
+            std::unordered_map<size_t, std::shared_ptr<void>>::iterator mEnd;
+            friend ComponentMap;
+        };
+        
+        iterator iter(){ return mComponents ? iterator(mComponents->begin(), mComponents->end()) : iterator(); }
+        size_t size() const { return mComponents ? mComponents->size() : 0; }
+        bool empty() const { return mComponents ? mComponents->empty() : true; }
+        
     private:
-        ComponentMap(GenericComponentMap& components):mComponents(components){}
-        GenericComponentMap& mComponents;
+        ComponentMap(GenericComponentMap* components):mComponents(components){}
+        GenericComponentMap* mComponents{nullptr};
         friend class ComponentManager;
     };
     
@@ -146,11 +162,7 @@ namespace mediasystem {
         
         template<typename ComponentType>
         ComponentMap<ComponentType> getComponents(){
-            return ComponentMap<ComponentType>(mComponents[type_id<ComponentType>]);
-        }
-        
-        GenericComponentMap& getComponents(type_id_t type){
-            return mComponents[type];
+            return ComponentMap<ComponentType>(&mComponents[type_id<ComponentType>]);
         }
         
         void clear(){

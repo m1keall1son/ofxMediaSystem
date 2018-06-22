@@ -85,43 +85,47 @@ namespace mediasystem {
         }
     }
     
-    void Scene::transitionIn()
+    void Scene::notifyTransitionIn()
     {
         if(mTransitionInDuration > 0){
             mTransitionDirection = TRANSITION_IN;
             mIsTransitioning = true;
             mTransitionStart = ofGetElapsedTimef();
+            transitionIn();
             triggerEvent<TransitionInBegin>(*this);
         }
-        start();
+        notifyStart();
     }
     
-    void Scene::transitionOut()
+    void Scene::notifyTransitionOut()
     {
         if(mTransitionOutDuration > 0){
             mTransitionDirection = TRANSITION_OUT;
             mIsTransitioning = true;
             mTransitionStart = ofGetElapsedTimef();
+            transitionOut();
             triggerEvent<TransitionOutBegin>(*this);
         }else{
-            stop();
+            notifyStop();
         }
     }
     
-    void Scene::transitionInComplete()
+    void Scene::notifyTransitionInComplete()
     {
         mIsTransitioning = false;
+        transitionInComplete();
         triggerEvent<TransitionInComplete>(*this);
     }
     
-    void Scene::transitionOutComplete()
+    void Scene::notifyTransitionOutComplete()
     {
         mIsTransitioning = false;
+        transitionOutComplete();
         triggerEvent<TransitionOutComplete>(*this);
-        stop();
+        notifyStop();
     }
     
-    void Scene::update()
+    void Scene::notifyUpdate()
     {
         auto self = this;
         if(mIsTransitioning){
@@ -129,10 +133,10 @@ namespace mediasystem {
             if(perc >= 1.){
                 switch(mTransitionDirection){
                     case TRANSITION_IN:
-                        transitionInComplete();
+                        notifyTransitionInComplete();
                         return;
                     case TRANSITION_OUT:
-                        transitionOutComplete();
+                        notifyTransitionOutComplete();
                         return;
                 }
             }else{
@@ -141,22 +145,25 @@ namespace mediasystem {
             }
         }
         auto now = ofGetElapsedTimef();
+        update();
         triggerEvent<Update>(*this,ofGetFrameNum(),now, now - mLastUpdateTime);
         mLastUpdateTime = now;
         //process any events queued by other systems and components, etc.
         processEvents();
     }
     
-    void Scene::start()
+    void Scene::notifyStart()
     {
         mHasStarted = true;
+        start();
         triggerEvent<Start>(*this);
     }
 
-    void Scene::stop()
+    void Scene::notifyStop()
     {
         mHasStarted = false;
         mIsTransitioning = false;
+        stop();
         triggerEvent<Stop>(*this);
     }
     
@@ -183,18 +190,21 @@ namespace mediasystem {
         }
     }
     
-    void Scene::init()
+    void Scene::notifyInit()
     {
+        init();
         triggerEvent<Init>(*this);
     }
     
-    void Scene::postInit()
+    void Scene::notifyPostInit()
     {
+        postInit();
         triggerEvent<PostInit>(*this);
     }
     
-    void Scene::shutdown()
+    void Scene::notifyShutdown()
     {
+        shutdown();
         triggerEvent<Shutdown>(*this);
         mComponentManager.clear();
         mSystemManager.clear();
@@ -203,13 +213,15 @@ namespace mediasystem {
         clearDelegates();
     }
     
-    void Scene::draw()
+    void Scene::notifyDraw()
     {
+        draw();
         triggerEvent<Draw>(*this);
     }
     
-    void Scene::reset()
+    void Scene::notifyReset()
     {
+        reset();
         queueEvent<Reset>(*this);
     }
 

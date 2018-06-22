@@ -31,14 +31,14 @@ namespace mediasystem {
         void setLayer(float layer){ mLayer = layer; }
         void hide(){ mVisible = false; }
         void show(){ mVisible = true; }
-        inline void setColor(const ofFloatColor& color){ mColor = color; }
-        inline void setAlpha(float alpha){ mAlpha = alpha; }
+        void setColor(const ofFloatColor& color){ mColor = color; }
+        void setAlpha(float alpha){ mAlpha = alpha; }
         
         //layered concept
         float getLayer() const { return mLayer; }
         bool isVisible()const{ return mVisible; }
-        inline const ofFloatColor& getColor()const{ return mColor; }
-        inline float getAlpha() const { return mAlpha; }
+        const ofFloatColor& getColor()const{ return mColor; }
+        float getAlpha() const { return mAlpha; }
         glm::mat4 getGlobalTransformMatrix(){
             if(auto node = mEntity.getComponent<ofNode>()){
                 return node->getGlobalTransformMatrix();
@@ -48,6 +48,9 @@ namespace mediasystem {
 
         //drawable concept
         void draw(){ mDrawable.draw(); }
+
+        Drawable& getDrawable() { return mDrawable; }
+        const Drawable& getDrawable() const { return mDrawable; }
         
     private:
         Entity& mEntity;

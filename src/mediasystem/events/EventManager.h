@@ -10,7 +10,6 @@
 #include <map>
 #include "ofMain.h"
 #include "IEvent.h"
-#include "mediasystem/util/Singleton.hpp"
 #include "mediasystem/util/Log.h"
 #include "mediasystem/util/TimedQueue.hpp"
 #include "mediasystem/util/TimedLockingQueue.hpp"
@@ -97,6 +96,4 @@ namespace mediasystem {
         std::map<type_id_t, EventDelegateList> mEvents;
     };
     
-    using GlobalEventManager = Singleton<EventManager>;
-        
 }//end namespace mediasystem

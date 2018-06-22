@@ -10,33 +10,31 @@
 #include "mediasystem/core/Scene.h"
 #include "mediasystem/util/Log.h"
 #include "mediasystem/util/Util.h"
-#include "mediasystem/core/GlobalEvents.h"
+#include "mediasystem/events/GlobalEvents.h"
 
 namespace mediasystem {
     
     SceneManager::SceneManager()
     {
-        auto& global_em = GlobalEventManager::get();
-        global_em.addDelegate<SystemInit>(EventDelegate::create<SceneManager, &SceneManager::onSystemInit>(this));
-        global_em.addDelegate<SystemPostInit>(EventDelegate::create<SceneManager, &SceneManager::onSystemPostInit>(this));
-        global_em.addDelegate<SystemReset>(EventDelegate::create<SceneManager, &SceneManager::onSystemReset>(this));
-        global_em.addDelegate<SystemShutdown>(EventDelegate::create<SceneManager, &SceneManager::onSystemShutdown>(this));
+        addGlobalEventDelegate<SystemInit>(EventDelegate::create<SceneManager, &SceneManager::onSystemInit>(this));
+        addGlobalEventDelegate<SystemPostInit>(EventDelegate::create<SceneManager, &SceneManager::onSystemPostInit>(this));
+        addGlobalEventDelegate<SystemReset>(EventDelegate::create<SceneManager, &SceneManager::onSystemReset>(this));
+        addGlobalEventDelegate<SystemShutdown>(EventDelegate::create<SceneManager, &SceneManager::onSystemShutdown>(this));
     }
     
     SceneManager::~SceneManager()
     {
         shutdownScenes();
-        auto& global_em = GlobalEventManager::get();
-        global_em.removeDelegate<SystemInit>(EventDelegate::create<SceneManager, &SceneManager::onSystemInit>(this));
-        global_em.removeDelegate<SystemPostInit>(EventDelegate::create<SceneManager, &SceneManager::onSystemPostInit>(this));
-        global_em.removeDelegate<SystemReset>(EventDelegate::create<SceneManager, &SceneManager::onSystemReset>(this));
-        global_em.removeDelegate<SystemShutdown>(EventDelegate::create<SceneManager, &SceneManager::onSystemShutdown>(this));
+        removeGlobalEventDelegate<SystemInit>(EventDelegate::create<SceneManager, &SceneManager::onSystemInit>(this));
+        removeGlobalEventDelegate<SystemPostInit>(EventDelegate::create<SceneManager, &SceneManager::onSystemPostInit>(this));
+        removeGlobalEventDelegate<SystemReset>(EventDelegate::create<SceneManager, &SceneManager::onSystemReset>(this));
+        removeGlobalEventDelegate<SystemShutdown>(EventDelegate::create<SceneManager, &SceneManager::onSystemShutdown>(this));
     }
 
     void SceneManager::shutdownScenes()
     {
         for(auto & scene : mScenes){
-            scene->shutdown();
+            scene->notifyShutdown();
         }
         mScenes.clear();
     }
@@ -44,24 +42,24 @@ namespace mediasystem {
     void SceneManager::resetScenes()
     {
         for(auto & scene : mScenes){
-            scene->reset();
+            scene->notifyReset();
         }
     }
     
     void SceneManager::initScenes()
     {
         for(auto & scene : mScenes){
-            scene->init();
+            scene->notifyInit();
         }
         for(auto & scene : mScenes){
-            scene->postInit();
+            scene->notifyPostInit();
         }
     }
     
     EventStatus SceneManager::onSystemInit(const IEventRef&)
     {
         for(auto & scene : mScenes){
-            scene->init();
+            scene->notifyInit();
         }
         return EventStatus::SUCCESS;
     }
@@ -69,7 +67,7 @@ namespace mediasystem {
     EventStatus SceneManager::onSystemPostInit(const IEventRef&)
     {
         for(auto & scene : mScenes){
-            scene->postInit();
+            scene->notifyPostInit();
         }
         return EventStatus::SUCCESS;
     }
@@ -93,7 +91,7 @@ namespace mediasystem {
         return scene;
     }
     
-    void SceneManager::changeScene(const std::string& nextScene)
+    void SceneManager::changeSceneTo(const std::string& nextScene)
     {
         mNextScene = nullptr;
         mNextScene = getScene(nextScene);
@@ -104,7 +102,7 @@ namespace mediasystem {
         }
     }
     
-    void SceneManager::changeScene(std::shared_ptr<Scene> scene)
+    void SceneManager::changeSceneTo(std::shared_ptr<Scene> scene)
     {
         mNextScene = scene;
         transition();
@@ -118,6 +116,7 @@ namespace mediasystem {
     
     EventStatus SceneManager::swapScenes(const IEventRef&)
     {
+        MS_LOG_VERBOSE("Transitioning complete! swapping current and next");
         mCurrentScene = mNextScene;
         mNextScene = nullptr;
         return EventStatus::REMOVE_THIS_DELEGATE;
@@ -126,10 +125,13 @@ namespace mediasystem {
     void SceneManager::transition()
     {
         if(mCurrentScene){
-            if(mNextScene)
-                mNextScene->transitionIn();
+            if(mNextScene){
+                mNextScene->notifyTransitionIn();
+                MS_LOG_VERBOSE("Transitioning to scene: " + mNextScene->getName());
+            }
             
-            mCurrentScene->transitionOut();
+            MS_LOG_VERBOSE("Transitioning from scene: " + mCurrentScene->getName());
+            mCurrentScene->notifyTransitionOut();
             if(mCurrentScene->isTransitioning()){
                 mCurrentScene->addDelegate<Stop>(EventDelegate::create<SceneManager, &SceneManager::swapScenes>(this));
             }else{
@@ -140,7 +142,8 @@ namespace mediasystem {
         }else{
             mCurrentScene = mNextScene;
             mNextScene = nullptr;
-            mCurrentScene->transitionIn();
+            mCurrentScene->notifyTransitionIn();
+            MS_LOG_VERBOSE("Changing scene to: " + mCurrentScene->getName());
         }
     }
     
@@ -158,39 +161,38 @@ namespace mediasystem {
     
     EventStatus SceneManager::onChangeScene(const IEventRef& sceneChange)
     {
-        if(mCurrentScene && mCurrentScene->isTransitioning()){
-            return EventStatus::DEFER_EVENT;
-        }
+//        if(mCurrentScene && mCurrentScene->isTransitioning()){
+//            return EventStatus::DEFER_EVENT;
+//        }
+        
+        MS_LOG_VERBOSE("Received a scene change request...");
+        
         auto cast = std::static_pointer_cast<SceneChange>(sceneChange);
         mNextScene = cast->getNextScene();
         if(mNextScene){
             transition();
         }else{
-            changeScene(cast->getNextSceneName());
+            changeSceneTo(cast->getNextSceneName());
         }
         return EventStatus::SUCCESS;
     }
     
     void SceneManager::update()
     {
-        //the global event manager
-        auto& global_em = GlobalEventManager::get();
-        global_em.processEvents();
-        
         if(mCurrentScene)
-            mCurrentScene->update();
+            mCurrentScene->notifyUpdate();
         
         if(mNextScene)
-            mNextScene->update();
+            mNextScene->notifyUpdate();
     }
     
     void SceneManager::draw()
     {
         if(mNextScene)
-            mNextScene->draw();
+            mNextScene->notifyDraw();
         
         if(mCurrentScene)
-            mCurrentScene->draw();
+            mCurrentScene->notifyDraw();
     }
 
     void SceneManager::destroyScene(const std::string& name)

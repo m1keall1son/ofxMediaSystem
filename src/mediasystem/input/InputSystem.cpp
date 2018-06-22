@@ -9,7 +9,8 @@
 #include "mediasystem/core/Entity.h"
 #include "mediasystem/core/Scene.h"
 #include "mediasystem/util/Log.h"
-#include "mediasystem/core/SceneEvents.h"
+#include "mediasystem/events/SceneEvents.h"
+#include "mediasystem/events/GlobalEvents.h"
 #include "InputComponent.h"
 
 namespace mediasystem {
@@ -17,8 +18,12 @@ namespace mediasystem {
     InputSystem::InputSystem(Scene& context)
     {
         context.addDelegate<Update>(EventDelegate::create<InputSystem, &InputSystem::onUpdateEvent>(this));
-        context.addDelegate<Init>(EventDelegate::create<InputSystem, &InputSystem::onInitEvent>(this));
+        context.addDelegate<Start>(EventDelegate::create<InputSystem, &InputSystem::onStartEvent>(this));
+        context.addDelegate<Stop>(EventDelegate::create<InputSystem, &InputSystem::onStopEvent>(this));
         context.addDelegate<NewComponent<InputComponent>>(EventDelegate::create<InputSystem, &InputSystem::onNewInputComponent>(this));
+        
+        context.addDelegate<Shutdown>(EventDelegate::create<InputSystem, &InputSystem::onResetEvent>(this));
+        addGlobalEventDelegate<SystemReset>(EventDelegate::create<InputSystem, &InputSystem::onResetEvent>(this));
     }
     
     EventStatus InputSystem::onNewInputComponent(const IEventRef& event)
@@ -42,16 +47,28 @@ namespace mediasystem {
         MS_LOG_ERROR("Something is wrong, the type_ids should match for in inputsystem on new component!");
         return EventStatus::FAILED;
     }
-    
-    EventStatus InputSystem::onInitEvent(const IEventRef& event)
+   
+    EventStatus InputSystem::onStartEvent(const IEventRef& event)
     {
         connect();
+        return EventStatus::SUCCESS;
+    }
+    
+    EventStatus InputSystem::onStopEvent(const IEventRef& event)
+    {
+        disconnect();
         return EventStatus::SUCCESS;
     }
 
     EventStatus InputSystem::onUpdateEvent(const IEventRef& event)
     {
         update();
+        return EventStatus::SUCCESS;
+    }
+    
+    EventStatus InputSystem::onResetEvent(const IEventRef& event)
+    {
+        reset();
         return EventStatus::SUCCESS;
     }
     
@@ -158,7 +175,7 @@ namespace mediasystem {
                                     break;
                                 }
                                 if(auto comp = compIt->lock()){
-                                    if(comp->isEnabled() && comp->mouseMove(event.second))
+                                    if(comp->mouseMove(event.second))
                                     {
                                         handled = true;
                                     }
@@ -188,7 +205,7 @@ namespace mediasystem {
                                     break;
                                 }
                                 if(auto comp = compIt->lock()){
-                                    if(comp->isEnabled() && comp->mouseExit(event.second))
+                                    if(comp->mouseExit(event.second))
                                     {
                                         handled = true;
                                     }
@@ -218,7 +235,7 @@ namespace mediasystem {
                                     break;
                                 }
                                 if(auto comp = compIt->lock()){
-                                    if(comp->isEnabled() && comp->mouseDragged(event.second))
+                                    if(comp->mouseDragged(event.second))
                                     {
                                         handled = true;
                                     }
@@ -248,7 +265,7 @@ namespace mediasystem {
                                     break;
                                 }
                                 if(auto comp = compIt->lock()){
-                                    if(comp->isEnabled() && comp->mousePressed(event.second))
+                                    if(comp->mousePressed(event.second))
                                     {
                                         handled = true;
                                     }
@@ -278,7 +295,7 @@ namespace mediasystem {
                                     break;
                                 }
                                 if(auto comp = compIt->lock()){
-                                    if(comp->isEnabled() && comp->mouseScrollWheel(event.second))
+                                    if(comp->mouseScrollWheel(event.second))
                                     {
                                         handled = true;
                                     }
@@ -308,7 +325,7 @@ namespace mediasystem {
                                     break;
                                 }
                                 if(auto comp = compIt->lock()){
-                                    if(comp->isEnabled() && comp->mouseReleased(event.second))
+                                    if(comp->mouseReleased(event.second))
                                     {
                                         handled = true;
                                     }
@@ -350,6 +367,13 @@ namespace mediasystem {
                 ++indexIt;
             }
         }
+    }
+    
+    void InputSystem::reset()
+    {
+        mComponentsByZIndex.clear();
+        mMouseEvents.clear();
+        mKeyEvents.clear();
     }
     
     void InputSystem::mouseMove( ofMouseEventArgs& mouse )

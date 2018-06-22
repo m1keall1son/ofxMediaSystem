@@ -27,11 +27,14 @@ namespace mediasystem {
         void disconnect();
 
         void update();
+        void reset();
 
     private:
         
-        EventStatus onInitEvent(const IEventRef& event);
+        EventStatus onStartEvent(const IEventRef& event);
+        EventStatus onStopEvent(const IEventRef& event);
         EventStatus onUpdateEvent(const IEventRef& event);
+        EventStatus onResetEvent(const IEventRef& event);
         EventStatus onNewInputComponent(const IEventRef& event);
 
         enum EventType { MOUSE_MOVE, MOUSE_EXIT, MOUSE_PRESSED, MOUSE_RELEASED, MOUSE_DRAGGED, MOUSE_SCROLL, KEY_PRESSED, KEY_RELEASED };
