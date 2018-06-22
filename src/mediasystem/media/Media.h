@@ -1,5 +1,5 @@
 //
-//  MediaComponent.hpp
+//  MediaRenderer.hpp
 //  WallTest
 //
 //  Created by Michael Allison on 6/19/18.
@@ -10,22 +10,26 @@
 #include <memory>
 #include "ofMain.h"
 #include "mediasystem/media/MediaBase.h"
+#include "mediasystem/media/ImageMedia.h"
+#include "mediasystem/media/ImageSequenceMedia.h"
+#include "mediasystem/media/StreamingImageSequenceMedia.h"
+#include "mediasystem/media/VideoMedia.h"
 
 namespace mediasystem {
     
-    using MediaComponentHandle = std::weak_ptr<class MediaComponent>;
+    using MediaHandle = std::weak_ptr<class Media>;
     
-    class MediaComponent {
+    class Media {
     public:
         
         enum RectMode { RECT_MODE_CENTER, RECT_MODE_TOP_LEFT };
         enum TextureMode { RECTANGLE, NORMALIZED };
         
-        MediaComponent(std::shared_ptr<MediaBase> media, RectMode mode = RECT_MODE_TOP_LEFT, TextureMode tc = RECTANGLE );
+        Media(std::shared_ptr<MediaBase> media, RectMode mode = RECT_MODE_TOP_LEFT, TextureMode tc = RECTANGLE );
         
-        MediaComponent(std::shared_ptr<MediaBase> media, float width, float height, RectMode mode = RECT_MODE_TOP_LEFT, TextureMode tc = RECTANGLE);
+        Media(std::shared_ptr<MediaBase> media, float width, float height, RectMode mode = RECT_MODE_TOP_LEFT, TextureMode tc = RECTANGLE);
         
-        ~MediaComponent() = default;
+        ~Media() = default;
         
         void draw();
         //void debugDraw();

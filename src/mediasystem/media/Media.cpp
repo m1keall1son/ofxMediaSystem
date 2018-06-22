@@ -1,15 +1,15 @@
 //
-//  MediaComponent.cpp
+//  MediaRenderer.cpp
 //  WallTest
 //
 //  Created by Michael Allison on 6/19/18.
 //
 
-#include "MediaComponent.h"
+#include "Media.h"
 
 namespace mediasystem {
     
-    MediaComponent::MediaComponent(std::shared_ptr<MediaBase> media, RectMode mode, TextureMode tc ):
+    Media::Media(std::shared_ptr<MediaBase> media, RectMode mode, TextureMode tc ):
         mMedia(std::move(media)),
         mRectMode(mode),
         mTexMode(tc)
@@ -19,7 +19,7 @@ namespace mediasystem {
         setRect(size.x, size.y, size.x, size.y);
     }
     
-    MediaComponent::MediaComponent(std::shared_ptr<MediaBase> media, float width, float height, RectMode mode, TextureMode tc ):
+    Media::Media(std::shared_ptr<MediaBase> media, float width, float height, RectMode mode, TextureMode tc ):
         mMedia(std::move(media)),
         mRectMode(mode),
         mTexMode(tc)
@@ -29,7 +29,7 @@ namespace mediasystem {
         setRect(width, height, size.x, size.y);
     }
     
-    void MediaComponent::setRect(float width, float height, float mediaW, float mediaH)
+    void Media::setRect(float width, float height, float mediaW, float mediaH)
     {
         mRect.clear();
         
@@ -78,47 +78,47 @@ namespace mediasystem {
         }
     }
 
-    void MediaComponent::setRectMode(RectMode mode)
+    void Media::setRectMode(RectMode mode)
     {
         mRectMode = mode;
         auto size = mMedia->getMediaSize();
         setRect(mDebugRect.width, mDebugRect.height, size.x, size.y);
     }
     
-    MediaComponent::RectMode MediaComponent::getRectMode()const
+    Media::RectMode Media::getRectMode()const
     {
         return mRectMode;
     }
     
-    glm::vec2 MediaComponent::getSize() const
+    glm::vec2 Media::getSize() const
     {
         return glm::vec2(mDebugRect.width, mDebugRect.height);
     }
     
-    ofRectangle MediaComponent::getRect() const
+    ofRectangle Media::getRect() const
     {
         return mDebugRect;
     }
     
-    void MediaComponent::setSize(float w, float h)
+    void Media::setSize(float w, float h)
     {
         auto size = mMedia->getMediaSize();
         setRect(w, h, size.x, size.y);
     }
     
-    void MediaComponent::draw()
+    void Media::draw()
     {
         mMedia->bind();
         mRect.draw();
         mMedia->unbind();
     }
     
-//    void MediaComponent::debugDraw()
+//    void MediaRenderer::debugDraw()
 //    {
 //        mMedia->debugDraw(mDebugRect, glm::min(mDebugRect.height/10.f, 12.f));
 //    }
     
-    glm::vec2 MediaComponent::getMediaSize()
+    glm::vec2 Media::getMediaSize()
     {
         return mMedia->getMediaSize();
     }

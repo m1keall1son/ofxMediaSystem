@@ -16,15 +16,15 @@
 #include "mediasystem/util/TupleHelpers.hpp"
 
 namespace mediasystem {
-
-    template<typename Drawable>
-    class Layered {
+    
+    template<typename T>
+    class Drawable : public T {
     public:
         
         template<typename...Args>
-        Layered(Entity& entity, Args&&...args):
+        Drawable(Entity& entity, Args&&...args):
             mEntity(entity),
-            mDrawable(std::forward<Args>(args)...)
+            T(std::forward<Args>(args)...)
         {}
         
         //setters
@@ -47,10 +47,7 @@ namespace mediasystem {
         }
 
         //drawable concept
-        void draw(){ mDrawable.draw(); }
-
-        Drawable& getDrawable() { return mDrawable; }
-        const Drawable& getDrawable() const { return mDrawable; }
+        void draw(){ T::draw(); }
         
     private:
         Entity& mEntity;
@@ -58,13 +55,12 @@ namespace mediasystem {
         float mAlpha{1};
         float mLayer{0.f};
         bool mVisible{true};
-        Drawable mDrawable;
     };
     
-    template<typename...Drawables>
+    template<typename...DrawableTypes>
     class LayeredRenderer {
         
-        using Layer = std::tuple<std::list<std::weak_ptr<Layered<Drawables>>>...>;
+        using Layer = std::tuple<std::list<std::weak_ptr<Drawable<DrawableTypes>>>...>;
         using LayersMap = std::map<float, Layer>;
         
     public:
@@ -74,13 +70,13 @@ namespace mediasystem {
             mPresenter( new DefaultPresenter )
         {
             mScene.addDelegate<Draw>(EventDelegate::create<LayeredRenderer,&LayeredRenderer::onDraw>(this));
-            int l[] = {(addNewComponentDelegate<Drawables>(),0)...};
+            int l[] = {(addNewComponentDelegate<DrawableTypes>(),0)...};
             (void)l;
         }
         
         ~LayeredRenderer(){
             mScene.removeDelegate<Draw>(EventDelegate::create<LayeredRenderer,&LayeredRenderer::onDraw>(this));
-            int l[] = {(removeNewComponentDelegate<Drawables>(),0)...};
+            int l[] = {(removeNewComponentDelegate<DrawableTypes>(),0)...};
             (void)l;
         }
         
@@ -97,13 +93,13 @@ namespace mediasystem {
 
             for ( auto & layer : mLayers ) {
                 float layerVal = layer.first;
-                for_each_in_tuple(layer.second,LayerChecker<Drawables...>(*this,layer.first));
+                for_each_in_tuple(layer.second,LayerChecker<DrawableTypes...>(*this,layer.first));
             }
 
             mPresenter->begin();
             
             for ( auto & layer : mLayers ) {
-                for_each_in_tuple(layer.second,LayerDrawer<Drawables...>(*this));
+                for_each_in_tuple(layer.second,LayerDrawer<DrawableTypes...>(*this));
             }
             
             mPresenter->end();
@@ -138,30 +134,30 @@ namespace mediasystem {
         
         template<typename T>
         void addNewComponentDelegate(){
-            mScene.addDelegate<NewComponent<Layered<T>>>(EventDelegate::create<LayeredRenderer, &LayeredRenderer::onNewLayeredComponent<T>>(this));
+            mScene.addDelegate<NewComponent<Drawable<T>>>(EventDelegate::create<LayeredRenderer, &LayeredRenderer::onNewLayeredComponent<T>>(this));
         }
         
         template<typename T>
         void removeNewComponentDelegate(){
-             mScene.removeDelegate<NewComponent<Layered<T>>>(EventDelegate::create<LayeredRenderer, &LayeredRenderer::onNewLayeredComponent<T>>(this));
+             mScene.removeDelegate<NewComponent<Drawable<T>>>(EventDelegate::create<LayeredRenderer, &LayeredRenderer::onNewLayeredComponent<T>>(this));
         }
         
         template<typename T>
-        void insertIntoLayer(float layer, std::weak_ptr<Layered<T>> handle){
+        void insertIntoLayer(float layer, std::weak_ptr<Drawable<T>> handle){
             auto found = mLayers.find(layer);
             if(found != mLayers.end()){
-                auto& list = get_element_by_type<std::list<std::weak_ptr<Layered<T>>>>(found->second);
+                auto& list = get_element_by_type<std::list<std::weak_ptr<Drawable<T>>>>(found->second);
                 list.emplace_back(std::move(handle));
             }else{
                 Layer l;
-                auto& list = get_element_by_type<std::list<std::weak_ptr<Layered<T>>>>(l);
+                auto& list = get_element_by_type<std::list<std::weak_ptr<Drawable<T>>>>(l);
                 list.emplace_back(std::move(handle));
                 mLayers.emplace(layer, std::move(l));
             }
         }
         
         template<typename T>
-        void checkLayer(float layer, std::list<std::weak_ptr<Layered<T>>>& handles){
+        void checkLayer(float layer, std::list<std::weak_ptr<Drawable<T>>>& handles){
             auto it = handles.begin();
             auto end = handles.end();
             while( it != end ){
@@ -179,7 +175,7 @@ namespace mediasystem {
         }
         
         template<typename T>
-        void drawLayer(std::list<std::weak_ptr<Layered<T>>>& handles){
+        void drawLayer(std::list<std::weak_ptr<Drawable<T>>>& handles){
             auto it = handles.begin();
             auto end = handles.end();
             while (it!=end) {
@@ -204,8 +200,8 @@ namespace mediasystem {
         
         template<typename T>
         EventStatus onNewLayeredComponent( const IEventRef& event ){
-            auto cast = std::static_pointer_cast<NewComponent<Layered<T>>>(event);
-            if(cast->getComponentType() == &type_id<Layered<T>>){
+            auto cast = std::static_pointer_cast<NewComponent<Drawable<T>>>(event);
+            if(cast->getComponentType() == &type_id<Drawable<T>>){
                 auto compHandle = cast->getComponentHandle();
                 if(auto comp = compHandle.lock()){
                     auto layer = comp->getLayer();
