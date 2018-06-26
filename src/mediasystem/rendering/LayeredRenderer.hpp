@@ -8,11 +8,11 @@
 #pragma once
 
 #include <tuple>
+#include "ofMain.h"
+#include "mediasystem/core/Entity.h"
 #include "mediasystem/core/ComponentSystem.hpp"
-#include "mediasystem/core/Scene.h"
 #include "mediasystem/rendering/IPresenter.h"
 #include "mediasystem/rendering/DefaultPresenter.h"
-#include "mediasystem/core/Entity.h"
 #include "mediasystem/util/TupleHelpers.hpp"
 
 namespace mediasystem {
@@ -23,8 +23,8 @@ namespace mediasystem {
         
         template<typename...Args>
         Drawable(Entity& entity, Args&&...args):
-            mEntity(entity),
-            T(std::forward<Args>(args)...)
+        T(std::forward<Args>(args)...),
+        mEntity(entity)
         {}
         
         //setters
@@ -45,7 +45,7 @@ namespace mediasystem {
             }
             return glm::mat4();
         }
-
+        
         //drawable concept
         void draw(){ T::draw(); }
         
@@ -92,7 +92,6 @@ namespace mediasystem {
         void draw(){
 
             for ( auto & layer : mLayers ) {
-                float layerVal = layer.first;
                 for_each_in_tuple(layer.second,LayerChecker<DrawableTypes...>(*this,layer.first));
             }
 

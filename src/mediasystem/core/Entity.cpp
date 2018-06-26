@@ -20,7 +20,8 @@ namespace mediasystem {
         for(auto& child : children){
             if(auto ent = child.lock()){
                 auto node = ent->getComponent<ofNode>();
-                node->clearParent(true);
+                if(node)
+                    node->clearParent(true);
             }
         }
         children.clear();
