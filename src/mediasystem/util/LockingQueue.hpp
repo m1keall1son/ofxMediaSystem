@@ -161,11 +161,12 @@ namespace mediasystem {
                 if(mAbort || mQueue.size() == MAX_SIZE){
                     lock.unlock();
                     mConditionEmpty.notify_one();
-                    return;
+                    return false;
                 }
                 mQueue.push_back(val);
             }
             mConditionEmpty.notify_one();
+            return true;
         }
         
         bool push(T&& val, uint32_t ms)
@@ -178,11 +179,12 @@ namespace mediasystem {
                 if(mAbort || mQueue.size() == MAX_SIZE){
                     lock.unlock();
                     mConditionEmpty.notify_one();
-                    return;
+                    return false;
                 }
                 mQueue.emplace_back(val);
             }
             mConditionEmpty.notify_one();
+            return true;
         }
         
         bool tryPush(const T& val)
