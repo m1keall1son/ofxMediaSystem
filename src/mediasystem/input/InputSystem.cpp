@@ -15,7 +15,8 @@
 
 namespace mediasystem {
     
-    InputSystem::InputSystem(Scene& context)
+    InputSystem::InputSystem(Scene& context):
+        mContext(context)
     {
         context.addDelegate<Update>(EventDelegate::create<InputSystem, &InputSystem::onUpdateEvent>(this));
         context.addDelegate<Start>(EventDelegate::create<InputSystem, &InputSystem::onStartEvent>(this));
@@ -24,6 +25,17 @@ namespace mediasystem {
         
         context.addDelegate<Shutdown>(EventDelegate::create<InputSystem, &InputSystem::onResetEvent>(this));
         addGlobalEventDelegate<SystemReset>(EventDelegate::create<InputSystem, &InputSystem::onResetEvent>(this));
+    }
+    
+    InputSystem::~InputSystem()
+    {
+        mContext.removeDelegate<Update>(EventDelegate::create<InputSystem, &InputSystem::onUpdateEvent>(this));
+        mContext.removeDelegate<Start>(EventDelegate::create<InputSystem, &InputSystem::onStartEvent>(this));
+        mContext.removeDelegate<Stop>(EventDelegate::create<InputSystem, &InputSystem::onStopEvent>(this));
+        mContext.removeDelegate<NewComponent<InputComponent>>(EventDelegate::create<InputSystem, &InputSystem::onNewInputComponent>(this));
+        
+        mContext.removeDelegate<Shutdown>(EventDelegate::create<InputSystem, &InputSystem::onResetEvent>(this));
+        removeGlobalEventDelegate<SystemReset>(EventDelegate::create<InputSystem, &InputSystem::onResetEvent>(this));
     }
     
     EventStatus InputSystem::onNewInputComponent(const IEventRef& event)

@@ -77,8 +77,15 @@ namespace mediasystem {
             if(found != list.end()){
                 list.erase(found);
             }else{
-                MS_LOG_ERROR("Attemping to remove an unknown delegate");
+                MS_LOG_WARNING("Attemping to remove an unknown delegate");
             }
+        }
+        
+        template<typename EventType>
+        size_t getNumDelegates(){
+            static_assert( std::is_base_of<IEvent, EventType>::value, "EventType must derive from IEvent.");
+            auto& list = mEvents[type_id<EventType>];
+            return list.size();
         }
         
         void clearQueues();

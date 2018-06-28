@@ -206,9 +206,16 @@ namespace mediasystem {
     {
         shutdown();
         triggerEvent<Shutdown>(*this);
+        std::vector<size_t> ids(mEntities.size());
+        for(auto & ent : mEntities){
+            ids.push_back(ent.first);
+        }
+        for(auto & id : ids){
+            destroyEntity(id);
+        }
+        mEntities.clear();
         mComponentManager.clear();
         mSystemManager.clear();
-        mEntities.clear();
         clearQueues();
         clearDelegates();
     }

@@ -30,6 +30,8 @@ namespace mediasystem {
     void queueThreadedGlobalEvent(const IEventRef& event);
     void queueThreadedGlobalEvent(IEventRef&& event);
     
+    void clearGlobalEventDelegates();
+    
     template<typename EventType, typename...Args>
     void queueGlobalEvent(Args&&...args){
         static_assert( std::is_base_of<IEvent, EventType>::value, "EventType must derive from IEvent.");
@@ -51,13 +53,13 @@ namespace mediasystem {
     template<typename EventType>
     void addGlobalEventDelegate(EventDelegate delegate){
         auto& g_em = GlobalEventManager::get();
-        g_em.addDelegate<EventType>(delegate);
+        g_em.addDelegate<EventType>(std::move(delegate));
     }
     
     template<typename EventType>
     void removeGlobalEventDelegate(EventDelegate delegate){
         auto& g_em = GlobalEventManager::get();
-        g_em.removeDelegate<EventType>(delegate);
+        g_em.removeDelegate<EventType>(std::move(delegate));
     }
     
 }//end namespace mediasystem

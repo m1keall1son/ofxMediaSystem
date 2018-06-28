@@ -22,7 +22,7 @@ namespace mediasystem {
     public:
         
         InputSystem(Scene& context);
-        ~InputSystem() = default;
+        ~InputSystem();
         
         void connect();
         void disconnect();
@@ -49,6 +49,7 @@ namespace mediasystem {
         void keyPressed( ofKeyEventArgs& key );
         void keyReleased( ofKeyEventArgs& key );
         
+        Scene& mContext;
         bool mConnected{false};
         std::deque<std::pair<EventType, ofKeyEventArgs>> mKeyEvents;
         std::deque<std::pair<EventType, ofMouseEventArgs>> mMouseEvents;

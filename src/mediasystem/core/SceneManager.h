@@ -22,6 +22,7 @@ namespace mediasystem {
         void initScenes();
         void resetScenes();
         void shutdownScenes();
+        void clear();
         
         void update();
         void draw();
@@ -53,11 +54,6 @@ namespace mediasystem {
 	protected:
         
         EventStatus onChangeScene(const IEventRef& sceneChange);
-        
-        EventStatus onSystemInit(const IEventRef&);
-        EventStatus onSystemPostInit(const IEventRef&);
-        EventStatus onSystemReset(const IEventRef&);
-        EventStatus onSystemShutdown(const IEventRef&);
 
         void transition();
         EventStatus swapScenes(const IEventRef&);

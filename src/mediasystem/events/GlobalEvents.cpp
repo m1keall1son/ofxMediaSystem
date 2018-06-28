@@ -10,14 +10,20 @@
 
 namespace mediasystem {
     
+    static bool sShouldClearDelegates = false;
+    
     static void processGlobalEvents(ofEventArgs& args)
     {
         auto& g_em = GlobalEventManager::get();
+        if(sShouldClearDelegates){
+            g_em.clearDelegates();
+            sShouldClearDelegates = false;
+        }
         g_em.processEvents();
     }
     
     ofGlobalEventManager::ofGlobalEventManager(){
-        ofAddListener(ofEvents().update, &processGlobalEvents);
+        ofAddListener(ofEvents().update, &processGlobalEvents, OF_EVENT_ORDER_BEFORE_APP);
     }
     
     ofGlobalEventManager::~ofGlobalEventManager(){
@@ -52,6 +58,11 @@ namespace mediasystem {
     {
         auto& g_em = GlobalEventManager::get();
         g_em.queueThreadedEvent(std::move(event));
+    }
+    
+    void clearGlobalEventDelegates()
+    {
+        sShouldClearDelegates = true;
     }
     
 }//end namespace mediasystem

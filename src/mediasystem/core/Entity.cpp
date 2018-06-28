@@ -15,7 +15,8 @@ namespace mediasystem {
     {
         if(auto p = parent.lock()){
             auto myNode = self.getComponent<ofNode>();
-            myNode->clearParent(true);
+            if(myNode)
+                myNode->clearParent(true);
         }
         for(auto& child : children){
             if(auto ent = child.lock()){
@@ -29,6 +30,9 @@ namespace mediasystem {
     }
     
     void EntityGraph::setParent(EntityHandle p, bool keepGlobalPosition){
+        if(auto p = parent.lock()){
+            clearParent(keepGlobalPosition);
+        }
         if(auto ent = p.lock()){
             parent = std::move(p);
             auto node = ent->getComponent<ofNode>();
@@ -67,6 +71,7 @@ namespace mediasystem {
                         children.erase(it);
                         return;
                     }
+                    ++it;
                 }else{
                     it = children.erase(it);
                 }
