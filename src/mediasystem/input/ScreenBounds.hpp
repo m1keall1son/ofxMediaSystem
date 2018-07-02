@@ -17,25 +17,40 @@ namespace mediasystem {
         
         ScreenBounds(Entity& context, ofRectangle rect):
             mContext(context),
-            mBounds(rect),
-            mSize(rect.width, rect.height)
-        {}
+            mCachedBounds(rect),
+            mSize(rect.width, rect.height),
+            mOrigin(rect.x, rect.y)
+        {
+            mContext.getScene().addDelegate<Update>(EventDelegate::create<ScreenBounds,&ScreenBounds::onUpdate>(this));
+        }
+        
+        ~ScreenBounds()
+        {
+            mContext.getScene().removeDelegate<Update>(EventDelegate::create<ScreenBounds,&ScreenBounds::onUpdate>(this));
+        }
         
         void update(){
             if(auto node = mContext.getComponent<ofNode>()){
                 auto pos = node->getGlobalPosition();
                 auto scale = node->getGlobalScale();
-                mBounds = ofRectangle( pos.x, pos.y, mSize.x * scale.x, mSize.y * scale.y );
+                mCachedBounds = ofRectangle( mOrigin.x + pos.x, mOrigin.y + pos.y, mSize.x * scale.x, mSize.y * scale.y );
             }
         }
         
-        bool contains( const glm::vec2& point )const{ return mBounds.inside(point); }
-        const ofRectangle& getScreenBounds()const { return mBounds; }
+        bool contains( const glm::vec2& point )const{ return mCachedBounds.inside(point); }
+        const ofRectangle& getScreenBounds()const { return mCachedBounds; }
         
     private:
+        
+        EventStatus onUpdate(const IEventRef&){
+            update();
+            return EventStatus::SUCCESS;
+        }
+        
         Entity& mContext;
-        ofRectangle mBounds;
+        ofRectangle mCachedBounds;
         glm::vec2 mSize;
+        glm::vec2 mOrigin;
     };
     
 }//end namespace mediasystem
