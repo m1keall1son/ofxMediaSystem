@@ -70,7 +70,7 @@ namespace mediasystem {
         template<typename Component, typename...Args>
         std::weak_ptr<Component> createComponent(size_t entity_id, Args&&...args){
             auto ret = mComponentManager.create<Component>(entity_id, std::forward<Args>(args)...);
-            queueEvent<NewComponent<Component>>(ret);
+            queueEvent<NewComponent<Component>>(getEntity(entity_id), ret);
             return ret;
         }
         

@@ -2,6 +2,7 @@
 
 #include "mediasystem/core/SceneManager.h"
 #include "mediasystem/rendering/LayeredRenderer.hpp"
+#include "mediasystem/rendering/OrderedUpdater.hpp"
 #include "mediasystem/rendering/MeshRenderer.h"
 #include "mediasystem/input/InputSystem.h"
 #include "mediasystem/core/Scene.h"

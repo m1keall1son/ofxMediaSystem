@@ -53,4 +53,19 @@ namespace mediasystem {
         glm::vec2 mOrigin;
     };
     
+    struct ScreenBoundsDebug {
+        ScreenBoundsDebug(std::shared_ptr<ScreenBounds> comp):input(comp){}
+        std::shared_ptr<ScreenBounds> input;
+        void draw(){
+            ofPushStyle();
+            ofNoFill();
+            auto matrix = glm::inverse(ofGetCurrentViewMatrix()) * ofGetCurrentMatrix(ofMatrixMode::OF_MATRIX_MODELVIEW);
+            ofMultMatrix(glm::inverse(matrix));
+            ofSetColor(255,255,0);
+            ofDrawRectangle(input->getScreenBounds());
+            ofMultMatrix(matrix);
+            ofPopStyle();
+        }
+    };
+    
 }//end namespace mediasystem

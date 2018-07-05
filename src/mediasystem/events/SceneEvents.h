@@ -41,11 +41,12 @@ namespace mediasystem {
     template<typename ComponentType>
     class NewComponent : public Event<NewComponent<ComponentType>> {
     public:
-        NewComponent(std::weak_ptr<ComponentType>&& comp):mComponent(std::move(comp)){}
-        NewComponent(const std::weak_ptr<ComponentType>& comp):mComponent(comp){}
+        NewComponent(std::weak_ptr<Entity> entity, std::weak_ptr<ComponentType> comp):mEntity(std::move(entity)),mComponent(std::move(comp)){}
         inline type_id_t getComponentType(){ return type_id<ComponentType>; }
         std::weak_ptr<ComponentType> getComponentHandle(){ return mComponent; }
+        std::weak_ptr<Entity> getEntityHandle(){ return mEntity; }
     private:
+        std::weak_ptr<Entity> mEntity;
         std::weak_ptr<ComponentType> mComponent;
     };
     
