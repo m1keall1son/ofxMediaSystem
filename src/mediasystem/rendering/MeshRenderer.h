@@ -22,6 +22,11 @@ namespace mediasystem {
     public:
         MeshRenderer(ofMesh mesh, std::shared_ptr<IMaterial> material);
         void draw();
+        template<typename MaterialType>
+        std::shared_ptr<MaterialType> getMaterial(){
+            static_assert(std::is_base_of<IMaterial,MaterialType>::value, "MaterialType must inherit IMaterial");
+            return std::static_pointer_cast<MaterialType>(mMaterial);
+        }
     private:
         ofMesh mMesh;
         std::shared_ptr<IMaterial> mMaterial;

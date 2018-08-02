@@ -83,8 +83,8 @@ namespace mediasystem {
     size_t mediasystem::Entity::sNextComponentId = 0;
     
     Entity::Entity(Scene& scene, uint64_t id):
-        mScene(scene),
-        mId(id)
+        mId(id),
+        mScene(scene)
     {
         mComponents.reset();
     }

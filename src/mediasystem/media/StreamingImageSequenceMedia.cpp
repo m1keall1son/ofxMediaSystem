@@ -139,7 +139,7 @@ namespace mediasystem {
     }
         
     EventStatus StreamingImageSequenceMedia::start(const IEventRef&){
-        if(isPlaying() && !isPaused()) EventStatus::SUCCESS;
+        if(isPlaying() && !isPaused()) return EventStatus::SUCCESS;
         play();
         flushQueue();
         ofLogNotice() << mSeqPaths[0].string() << " starting!";
@@ -345,7 +345,7 @@ namespace mediasystem {
             ++mSerial;
             auto count = mQueue.size();
             Playable::State tmp = mState;
-            for(int i = 0; i < count; i++){
+            for(size_t i = 0; i < count; i++){
                 tmp = Playable::State::advance(tmp);
                 auto frame = mQueue.peek(i);
                 if(frame->frame == tmp.currentFrame){

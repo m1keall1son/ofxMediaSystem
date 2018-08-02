@@ -12,8 +12,8 @@ namespace mediasystem {
         
     InputComponent::InputComponent( Entity& context, const ofRectangle& screenBounds, int z_index, InputHandlers handlers ) :
         mContext(context),
-        mScreenBounds(screenBounds),
         mZIndex(z_index),
+        mScreenBounds(screenBounds),
         mSize(screenBounds.width, screenBounds.height),
         mHandlers(std::move(handlers))
     {

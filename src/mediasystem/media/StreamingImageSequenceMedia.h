@@ -15,8 +15,8 @@
 namespace mediasystem {
     
     struct Frame {
-        Frame():frame(0),img(nullptr),serial(0),finished(false){}
-        Frame(uint32_t f, const std::shared_ptr<ofImage>& d, uint32_t s, bool fin):frame(f),img(d),serial(s),finished(fin){}
+        Frame():img(nullptr),frame(0),serial(0),finished(false){}
+        Frame(uint32_t f, const std::shared_ptr<ofImage>& d, uint32_t s, bool fin):img(d),frame(f),serial(s),finished(fin){}
         std::shared_ptr<ofImage> img;
         uint32_t frame;
         uint32_t serial;

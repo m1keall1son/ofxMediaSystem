@@ -127,7 +127,6 @@ namespace mediasystem {
     
     void Scene::notifyUpdate()
     {
-        auto self = this;
         if(mIsTransitioning){
             auto perc = getPercentTransitionComplete();
             if(perc >= 1.){

@@ -10,9 +10,9 @@
 namespace mediasystem {
     
     Media::Media(std::shared_ptr<MediaBase> media, RectMode mode, TextureMode tc ):
-        mMedia(std::move(media)),
         mRectMode(mode),
-        mTexMode(tc)
+        mTexMode(tc),
+        mMedia(std::move(media))
     {
         mMedia->init();
         auto size = mMedia->getMediaSize();
@@ -20,9 +20,9 @@ namespace mediasystem {
     }
     
     Media::Media(std::shared_ptr<MediaBase> media, float width, float height, RectMode mode, TextureMode tc ):
-        mMedia(std::move(media)),
         mRectMode(mode),
-        mTexMode(tc)
+        mTexMode(tc),
+        mMedia(std::move(media))
     {
         mMedia->init();
         auto size = mMedia->getMediaSize();

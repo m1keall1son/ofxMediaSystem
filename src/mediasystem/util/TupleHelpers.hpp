@@ -8,6 +8,8 @@
 #pragma once
 #include <tuple>
 
+#define UNUSED_VARIABLE(expr) do { (void)(expr); } while (0)
+
 namespace mediasystem {
     
     namespace detail
@@ -25,6 +27,7 @@ namespace mediasystem {
         void for_each(T&& t, F f, seq<Is...>)
         {
             auto l = { (f(std::get<Is>(t)), 0)... };
+            UNUSED_VARIABLE(l);
         }
         template <class T, std::size_t N, class... Args>
         struct get_number_of_element_from_tuple_by_type_impl
