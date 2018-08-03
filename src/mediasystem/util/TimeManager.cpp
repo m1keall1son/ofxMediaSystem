@@ -12,13 +12,13 @@
 namespace mediasystem {
 
     TimeManager::TimeManager() :
+        mFrameTimer(true),
+        mPlaybackState(UNLOCKED),
         mLockedFrameRate(60),
         mTimelineSpeed(1.0),
-        mPlaybackState(UNLOCKED),
-        mCurrentFrameNumber(0),
         mCurrentTime(0.0),
         mLastFrameTime(0.0),
-        mFrameTimer(true)
+        mCurrentFrameNumber(0)
     {
         mTick = 1.0 / static_cast<double>(mLockedFrameRate);
     }

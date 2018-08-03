@@ -138,7 +138,7 @@ namespace mediasystem {
         return glm::vec2(mCurrentImage.getWidth(), mCurrentImage.getHeight());
     }
         
-    EventStatus StreamingImageSequenceMedia::start(const IEventRef&){
+    EventStatus StreamingImageSequenceMedia::startPlayback(const IEventRef&){
         if(isPlaying() && !isPaused()) return EventStatus::SUCCESS;
         play();
         flushQueue();

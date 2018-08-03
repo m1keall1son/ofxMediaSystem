@@ -37,9 +37,12 @@ namespace mediasystem {
             }
         }
         
-        bool contains( const glm::vec2& point )const{ return mCachedBounds.inside(point); }
+        bool contains( const glm::vec2& point )const{ return mEnabled ? mCachedBounds.inside(point) : false; }
         const ofRectangle& getScreenBounds()const { return mCachedBounds; }
-        
+        inline bool isEnabled(){ return mEnabled; }
+        inline void disable(){ mEnabled = false; }
+        inline void enable(){ mEnabled = true; }
+
     private:
         
         EventStatus onUpdate(const IEventRef&){
@@ -48,6 +51,7 @@ namespace mediasystem {
         }
         
         Entity& mContext;
+        bool mEnabled{true};
         ofRectangle mCachedBounds;
         glm::vec2 mSize;
         glm::vec2 mOrigin;
