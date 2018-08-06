@@ -8,6 +8,7 @@
 #include "mediasystem/core/Scene.h"
 #include "mediasystem/events/GlobalEvents.h"
 #include "mediasystem/util/Util.h"
+#include "mediasystem/util/StateMachine.h"
 #include "mediasystem/util/Singleton.hpp"
 #include "mediasystem/media/Media.h"
 
