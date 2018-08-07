@@ -34,7 +34,7 @@ namespace mediasystem {
         
         StreamingImageSequence(std::filesystem::path source, float framerate, Playable::Options options = Playable::Options());
         
-        ~StreamingImageSequence();
+        virtual ~StreamingImageSequence();
         
         void step(double time)override;
         void play()override;

@@ -35,8 +35,7 @@ namespace mediasystem {
             if(!media.second->isLoaded())
                 media.second->load();
             if(media.second->isPlayable()){
-                auto playableMedia = std::static_pointer_cast<IPlayableMedia>(media.second);
-                playableMedia->update(update->getElapsedFrames(), update->getElapsedTime(), update->getLastFrameTime());
+                media.second->update(update->getElapsedFrames(), update->getElapsedTime(), update->getLastFrameTime());
             }
         }
         return EventStatus::SUCCESS;

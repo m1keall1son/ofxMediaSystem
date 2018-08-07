@@ -7,42 +7,43 @@
 
 #pragma once
 
-#include "ImageSequence.h"
+#include "imgseq/ImageSequence.h"
+#include "imgseq/StreamingImageSequence.h"
 #include "IMedia.h"
 
 namespace mediasystem {
-        
-    class ImageSequenceMedia : public IPlayableMedia {
+    
+    class ImageSequenceMedia : public IMedia, public ImageSequence {
     public:
-      
-        enum ImgSeqType { STATIC_SEQ, STREAMING_SEQ };
         
-        ImageSequenceMedia(std::filesystem::path path, ImgSeqType type, float fps, Playable::Options options = Playable::Options() );
-        ~ImageSequenceMedia();
+        ImageSequenceMedia(std::filesystem::path path, float fps, Playable::Options options = Playable::Options() );
         
         void load()override;
         bool isLoaded()const override;
-        void update(size_t frame, float elapsedTime, float lastFrameTime)override;
         
         void bind()override;
         void unbind()override;
         
-        void play()override;
-        void stop()override;
-        void pause()override;
-        void unpause()override;
-        void setLoop(bool loop)override;
-        bool isPlaying() const override;
-        bool isPaused() const override;
-        bool isLooping() const override;
+        glm::vec2 getMediaSize() const override;
+
+        void update(size_t frame, float elapsedTime, float lastFrameTime)override;
+    };
+    
+    class StreamingImageSequenceMedia : public IMedia, public StreamingImageSequence {
+    public:
         
+        StreamingImageSequenceMedia(std::filesystem::path path, float fps, Playable::Options options = Playable::Options() );
+        
+        void load()override;
+        bool isLoaded()const override;
+        
+        void bind()override;
+        void unbind()override;
+       
         glm::vec2 getMediaSize() const override;
         
-    protected:
-        
-        ImgSeqType mType{STATIC_SEQ};
-        std::shared_ptr<ImageSequenceBase> mSequence;
-        
+        void update(size_t frame, float elapsedTime, float lastFrameTime)override;
+    
     };
     
 }//end namespace mediasystem

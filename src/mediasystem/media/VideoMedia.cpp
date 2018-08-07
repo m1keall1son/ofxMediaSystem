@@ -17,74 +17,29 @@ namespace mediasystem {
     
     glm::vec2 VideoMedia::getMediaSize() const
     {
-        return glm::vec2(mVideoPlayer.getWidth(), mVideoPlayer.getHeight());
+        return glm::vec2(getWidth(), getHeight());
     }
     
     void VideoMedia::load()
     {
         if(!mVideoPath.empty()){
-            mVideoPlayer.load(mVideoPath.string());
+            ofVideoPlayer::load(mVideoPath.string());
         }
     }
     
     void VideoMedia::bind()
     {
-        mVideoPlayer.bind();
+        ofVideoPlayer::bind();
     }
     
     void VideoMedia::unbind()
     {
-        mVideoPlayer.unbind();
+        ofVideoPlayer::unbind();
     }
     
     bool VideoMedia::isLoaded() const
     {
-        return mVideoPlayer.isLoaded();
-    }
- 
-    void VideoMedia::play()
-    {
-        mVideoPlayer.play();
-    }
-    
-    void VideoMedia::stop()
-    {
-        mVideoPlayer.stop();
-    }
-    
-    void VideoMedia::pause()
-    {
-        mVideoPlayer.setPaused(true);
-    }
-    
-    void VideoMedia::unpause()
-    {
-        mVideoPlayer.setPaused(false);
-    }
-    
-    bool VideoMedia::isPlaying()const
-    {
-        return mVideoPlayer.isPlaying();
-    }
-    
-    bool VideoMedia::isPaused()const
-    {
-        return mVideoPlayer.isPaused();
-    }
-    
-    void VideoMedia::setLoop(bool loop)
-    {
-        mVideoPlayer.setLoopState(ofLoopType::OF_LOOP_NORMAL);
-    }
-    
-    bool VideoMedia::isLooping()const
-    {
-        return mVideoPlayer.getLoopState() != ofLoopType::OF_LOOP_NONE;
-    }
-
-    void VideoMedia::update(size_t frame, float elapedTime, float lastFrameTime)
-    {
-        mVideoPlayer.update();
+        return ofVideoPlayer::isLoaded();
     }
     
 }//end namespace mediasystem

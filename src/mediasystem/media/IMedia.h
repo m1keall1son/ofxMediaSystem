@@ -18,24 +18,10 @@ namespace mediasystem {
     public:
         virtual ~IMedia() = default;
         virtual glm::vec2 getMediaSize()const = 0;
-        virtual bool isPlayable() const { return false; }
         virtual void load() = 0;
         virtual bool isLoaded() const = 0;
-    };
-    
-    class IPlayableMedia : public IMedia {
-    public:
-        virtual ~IPlayableMedia() = default;
-        virtual void play() = 0;
-        virtual void stop() = 0;
-        virtual void pause() = 0;
-        virtual void unpause() = 0;
-        virtual bool isPlaying() const = 0;
-        virtual bool isPaused() const = 0;
-        virtual void setLoop(bool loop) = 0;
-        virtual bool isLooping()const = 0;
-        virtual bool isPlayable() const { return true; }
-        virtual void update(size_t frame, float elapedTime, float lastFrameTime) = 0;
+        virtual bool isPlayable() const { return false; }
+        virtual void update(size_t frame, float elapsedTime, float lastFrameTime){}
     };
     
 }//end namespace mediasystem
