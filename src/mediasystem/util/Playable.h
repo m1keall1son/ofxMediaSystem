@@ -84,6 +84,8 @@ namespace mediasystem {
                 mLoopOut(std::numeric_limits<uint32_t>::max())
             {}
             
+            virtual ~Options() = default;
+            
             inline Options& disableLooping(){ mFlags &= ~State::PLAYSTATE_LOOPING; return *this; }
             inline Options& keyFrame(uint32_t frame, const KeyFrameCallback& callback){ mKeyFrames.emplace(frame,callback); return *this; }
             inline Options& boomarang(){ mFlags |= (State::PLAYSTATE_LOOPING | State::PLAYSTATE_BOOMARANG); return *this; }

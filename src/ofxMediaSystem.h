@@ -10,11 +10,8 @@
 #include "mediasystem/util/Util.h"
 #include "mediasystem/util/StateMachine.h"
 #include "mediasystem/util/Singleton.hpp"
-#include "mediasystem/media/IMedia.h"
-#include "mediasystem/media/ImageMedia.h"
-#include "mediasystem/media/VideoMedia.h"
-#include "mediasystem/media/ImageSequenceMedia.h"
-#include "mediasystem/media/MediaSystem.h"
+#include "mediasystem/media/imgseq/ImageSequence.h"
+#include "mediasystem/media/MediaUpdateSystem.h"
 
 namespace ms = mediasystem;
 

@@ -44,11 +44,6 @@ namespace mediasystem {
         return mesh;
     }
     
-    MeshRenderer::MeshRenderer( ofMesh mesh, std::shared_ptr<IMaterial> material ):
-        mMesh(std::move(mesh)),
-        mMaterial(std::move(material))
-    {}
-    
     void MeshRenderer::draw()
     {
         if(mMaterial)
