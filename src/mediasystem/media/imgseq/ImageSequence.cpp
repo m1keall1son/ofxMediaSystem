@@ -1,5 +1,5 @@
 
-#include "ImageSequenceBase.h"
+#include "ImageSequence.h"
 #include <algorithm>
 #include "mediasystem/util/Log.h"
 #include "ofMain.h"
@@ -9,9 +9,16 @@ using namespace std::chrono;
 
 namespace mediasystem {
     
-    ImageSequenceBase::ImageSequenceBase(float fps, const Playable::Options& options) :
-        Playable(fps, options)
+    ImageSequenceBase::ImageSequenceBase(std::filesystem::path&& pathToImgDir, float fps, const Playable::Options& options) :
+        Playable(fps, options),
+        mImagesDir(std::move(pathToImgDir))
     {}
+    
+    void ImageSequenceBase::setImgDir(std::filesystem::path pathToImgDir)
+    {
+        mImagesDir = std::move(pathToImgDir);
+        mIsInit = false;
+    }
 
     void ImageSequenceBase::initPaths( const std::filesystem::path& imageSequenceDir)
     {
@@ -45,12 +52,38 @@ namespace mediasystem {
         }
         std::stable_sort(imageFiles.begin(), imageFiles.end());
     }
-
-    void ImageSequenceBase::loadImageData(const std::filesystem::path & data, ofImage& surface)
+    
+    ImageSequence::ImageSequence(std::filesystem::path pathToImgDir, float fps, Playable::Options options):
+        ImageSequenceBase(std::move(pathToImgDir), fps, std::move(options))
     {
-        if (!data.empty()) {
-            surface.load(data);
+    }
+    
+    void ImageSequence::init()
+    {
+        if(!mImagesDir.empty()){
+            initPaths(mImagesDir);
+            mImages.clear();
+            for ( auto & path : mSeqPaths ) {
+                ofImage surface;
+                surface.load(path);
+                mImages.push_back(surface);
+            }
+            reset();
+            mIsInit = true;
         }
     }
     
+    ofTexture* ImageSequence::getCurrentTexture()
+    {
+        return !mImages.empty() ? &mImages[getCurrentFrame() < mImages.size() ? getCurrentFrame() : mImages.size()-1].getTexture() : nullptr;
+    }
+    
+    glm::vec2 ImageSequence::getSize() const
+    {
+        if(!mImages.empty()){
+            return glm::vec2(mImages.front().getWidth(), mImages.front().getHeight());
+        }
+        return glm::vec2(0);
+    }
+
 }//end namespace mediasystem

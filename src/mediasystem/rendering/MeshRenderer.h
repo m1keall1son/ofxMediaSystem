@@ -18,6 +18,8 @@ namespace mediasystem {
         virtual void unbind() = 0;
     };
     
+    ofMesh meshFromRect(const ofRectangle& rect, bool normalized = true);
+    
     class MeshRenderer {
     public:
         MeshRenderer(ofMesh mesh, std::shared_ptr<IMaterial> material);

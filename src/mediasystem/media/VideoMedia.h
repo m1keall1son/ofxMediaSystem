@@ -6,36 +6,41 @@
 //
 
 #pragma once
-#include "mediasystem/media/MediaBase.h"
+#include "mediasystem/media/IMedia.h"
 #include "ofMain.h"
 
 namespace mediasystem {
     
     class Scene;
     
-    class VideoMedia : public MediaBase {
+    class VideoMedia : public IPlayableMedia {
     public:
         
-        VideoMedia(Entity& entity, std::filesystem::path path);
-        ~VideoMedia();
+        VideoMedia(std::filesystem::path path);
         
-        void init()override;
+        void load()override;
+        bool isLoaded()const override;
+        void update(size_t frame, float elapedTime, float lastFrameTime)override;
+        
+        void play() override;
+        void stop() override;
+        void pause() override;
+        void unpause()override;
+        bool isPlaying()const override;
+        bool isPaused()const override;
+        
+        void setLoop(bool loop) override;
+        bool isLooping()const override;
+        
         void bind()override;
         void unbind()override;
-        bool isInit()const override;
-        void debugDraw(const ofRectangle& area, float fontsize)override;
         
         glm::vec2 getMediaSize()const override;
         
     protected:
-        
-        EventStatus start(const IEventRef&);
-        EventStatus stop(const IEventRef&);
-        EventStatus update(const IEventRef&);
-        
+    
         ofVideoPlayer mVideoPlayer;
         std::filesystem::path mVideoPath;
-        bool mIsInit{false};
         
     };
     

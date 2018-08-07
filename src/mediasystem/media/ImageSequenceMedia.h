@@ -1,29 +1,48 @@
+//
+//  ImageSequenceViewBase.hpp
+//  ProjectionDemo
+//
+//  Created by Michael Allison on 5/7/18.
+//
+
 #pragma once
 
-#include "ofMain.h"
-#include "mediasystem/media/ImageSequenceMediaBase.h"
+#include "ImageSequence.h"
+#include "IMedia.h"
 
 namespace mediasystem {
-    
-    class ImageSequenceMedia : public ImageSequenceMediaBase {
-	public:
-
-        ImageSequenceMedia(Entity& entity, float fps = 30.f, const Playable::Options& options = Playable::Options());
-        ImageSequenceMedia(Entity& entity, const std::filesystem::path& source, float framerate, const Playable::Options& options = Playable::Options());
         
-        void init()override;
-        bool isInit()const override;
-        void debugDraw(const ofRectangle& area, float fontsize)override;
+    class ImageSequenceMedia : public IPlayableMedia {
+    public:
+      
+        enum ImgSeqType { STATIC_SEQ, STREAMING_SEQ };
+        
+        ImageSequenceMedia(std::filesystem::path path, ImgSeqType type, float fps, Playable::Options options = Playable::Options() );
+        ~ImageSequenceMedia();
+        
+        void load()override;
+        bool isLoaded()const override;
+        void update(size_t frame, float elapsedTime, float lastFrameTime)override;
+        
         void bind()override;
         void unbind()override;
         
-        glm::vec2 getMediaSize()const override;
+        void play()override;
+        void stop()override;
+        void pause()override;
+        void unpause()override;
+        void setLoop(bool loop)override;
+        bool isPlaying() const override;
+        bool isPaused() const override;
+        bool isLooping() const override;
         
-	protected:
+        glm::vec2 getMediaSize() const override;
         
-        ofTexture* getCurrentTexture() override;
-        std::vector<ofImage> mImages;
+    protected:
         
-	};
+        ImgSeqType mType{STATIC_SEQ};
+        std::shared_ptr<ImageSequenceBase> mSequence;
+        
+    };
     
 }//end namespace mediasystem

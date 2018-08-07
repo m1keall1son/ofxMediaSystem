@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "ImageSequenceMediaBase.h"
+#include "ImageSequence.h"
 #include "mediasystem/util/LockingQueue.hpp"
 #include "ofMain.h"
 #include <thread>
@@ -29,26 +29,19 @@ namespace mediasystem {
         bool operator>=(const Frame& rhs);
     };
     
-    class Scene;
-
-    class StreamingImageSequenceMedia : public ImageSequenceMediaBase {
+    class StreamingImageSequence : public ImageSequenceBase {
     public:
         
-        StreamingImageSequenceMedia(Entity& context, float fps = 30.f, const Playable::Options& options = Playable::Options());
-        StreamingImageSequenceMedia(Entity& context, const std::filesystem::path& source, float framerate, const Playable::Options& options = Playable::Options());
+        StreamingImageSequence(std::filesystem::path source, float framerate, Playable::Options options = Playable::Options());
         
-        ~StreamingImageSequenceMedia();
+        ~StreamingImageSequence();
         
-        void initPaths(const std::filesystem::path& imageSequenceDir)override;
         void step(double time)override;
+        void play()override;
     
         void init()override;
-        bool isInit()const override;
-        void debugDraw(const ofRectangle& area, float fontsize)override;
-        void bind()override;
-        void unbind()override;
-        
-        glm::vec2 getMediaSize()const override;
+        ofTexture* getCurrentTexture() override;
+        glm::vec2 getSize()const override;
 
         void setLoop( const bool flag = true )override;
         void setReverse(const bool flag = true)override;
@@ -60,11 +53,10 @@ namespace mediasystem {
         
     private:
         
-        EventStatus startPlayback(const IEventRef&)override;        
+        void initPaths(const std::filesystem::path& imageSequenceDir)override;
         
         void flushQueue();
         
-        ofTexture* getCurrentTexture() override;
         void startDataLoadingThread();
         void stopDataLoadingThread();
         void dataLoadingThread();
