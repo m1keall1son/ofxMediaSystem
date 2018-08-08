@@ -7,7 +7,6 @@
 
 #pragma once
 #include "mediasystem/core/Scene.h"
-#include "mediasystem/util/Manager.hpp"
 #include "mediasystem/media/imgseq/ImageSequence.h"
 
 namespace mediasystem {

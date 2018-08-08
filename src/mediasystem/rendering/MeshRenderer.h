@@ -55,7 +55,7 @@ namespace mediasystem {
                 }
             }
             
-            std::shared_ptr<BinableType> getBinable(){
+            std::shared_ptr<BinableType> getBindable(){
                 return mMaterial.lock();
             }
             
@@ -79,7 +79,7 @@ namespace mediasystem {
                 mMaterial->unbind();
             }
             
-            std::shared_ptr<BinableType> getBinable(){
+            std::shared_ptr<BinableType> getBindable(){
                 return mMaterial;
             }
             
