@@ -36,7 +36,7 @@ namespace mediasystem {
         void notifyTransitionIn();
         void notifyTransitionOut();
         
-        void notifyUpdate();
+        void notifyUpdate(size_t elapsedFrames, float elapsedTime, float prevFrameTime);
         void notifyDraw();
         
         void notifyShutdown();
@@ -109,7 +109,7 @@ namespace mediasystem {
         virtual void transitionUpdate(){}
         virtual void transitionOut(){}
         
-        virtual void update(){}
+        virtual void update(size_t elapsedFrames, float elapsedTime, float prevFrameTime){}
         virtual void draw(){}
         
         virtual void shutdown(){}
@@ -137,7 +137,6 @@ namespace mediasystem {
         float mTransitionInDuration{0.f};
         float mTransitionOutDuration{0.f};
         float mTransitionStart{0.f};
-        float mLastUpdateTime{0.f};
         
         bool mHasStarted{false};
         ComponentManager mComponentManager;

@@ -125,7 +125,7 @@ namespace mediasystem {
         notifyStop();
     }
     
-    void Scene::notifyUpdate()
+    void Scene::notifyUpdate(size_t elapsedFrames, float elapsedTime, float prevFrameTime)
     {
         if(mIsTransitioning){
             auto perc = getPercentTransitionComplete();
@@ -143,10 +143,8 @@ namespace mediasystem {
                 triggerEvent<TransitionUpdate>(*this);
             }
         }
-        auto now = ofGetElapsedTimef();
-        update();
-        triggerEvent<Update>(*this,ofGetFrameNum(),now, now - mLastUpdateTime);
-        mLastUpdateTime = now;
+        update(elapsedFrames, elapsedTime, prevFrameTime);
+        triggerEvent<Update>(*this, elapsedFrames, elapsedTime, prevFrameTime);
         //process any events queued by other systems and components, etc.
         processEvents();
     }
@@ -212,8 +210,8 @@ namespace mediasystem {
         for(auto & id : ids){
             destroyEntity(id);
         }
-        mEntities.clear();
         mComponentManager.clear();
+        mEntities.clear();
         mSystemManager.clear();
         clearQueues();
         clearDelegates();

@@ -137,13 +137,40 @@ namespace mediasystem {
         return EventStatus::SUCCESS;
     }
     
-    void SceneManager::update()
+    void SceneManager::resetFrameTime()
     {
+        mPrevTime = 0.f;
+        mSetTime = false;
+    }
+    
+    void SceneManager::update(float elapsedTime, size_t frame)
+    {
+        float time = 0.f;
+        if(elapsedTime == -1){
+            time = ofGetElapsedTimef();
+        }else{
+            time = elapsedTime;
+        }
+        
+        auto framenum = ofGetFrameNum();
+        if(frame != std::numeric_limits<size_t>::max()){
+            framenum = frame;
+        }
+        
+        if(!mSetTime){
+            mPrevTime = time;
+            mSetTime = true;
+        }
+        
+        auto dt = time - mPrevTime;
+        
         if(mCurrentScene)
-            mCurrentScene->notifyUpdate();
+            mCurrentScene->notifyUpdate(framenum, time, dt);
         
         if(mNextScene)
-            mNextScene->notifyUpdate();
+            mNextScene->notifyUpdate(framenum, time, dt);
+        
+        mPrevTime = time;
     }
     
     void SceneManager::draw()
@@ -182,6 +209,7 @@ namespace mediasystem {
         mScenes.clear();
         mNextScene = nullptr;
         mCurrentScene = nullptr;
+        resetFrameTime();
     }
     
 }//end namespace mediasystem

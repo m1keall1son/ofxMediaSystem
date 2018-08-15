@@ -48,7 +48,9 @@ public:
     }
     
     //drawable concept
-    void draw(){ T::draw(); }
+    void draw(){
+        T::draw(); //must have a draw function
+    }
     
 private:
     Entity& mEntity;

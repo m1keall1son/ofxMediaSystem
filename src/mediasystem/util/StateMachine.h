@@ -18,7 +18,7 @@ public:
     using ExitFn = std::function<void()>;
     using TransitioningFn = std::function<void(float)>;
     using TransitionCompleteFn = std::function<void()>;
-    using UpdateFn = std::function<void(size_t, float)>;
+    using UpdateFn = std::function<void(size_t, float, float)>;
     
     class State {
     public:
@@ -40,7 +40,7 @@ public:
         const std::string& getName() const { return mName; }
         State* getPrevState(){ return mPrevState; }
         
-        void update(size_t frame, float elapsedTime);
+        void update(size_t frame, float elapsedTime, float lastFrameTime);
         void enter(float elapsedTime);
         void exit(float elapsedTime);
 
@@ -65,7 +65,7 @@ public:
 
     void addState(State state);
     void requestState(std::string state, bool force = false);
-    void update(size_t frame, float elapsedTime);
+    void update(size_t frame, float elapsedTime, float lastFrameTime);
     
     const std::string& getCurrentState() const;
     

@@ -24,7 +24,7 @@ namespace mediasystem {
         void shutdownScenes();
         void clear();
         
-        void update();
+        void update(float elapsedTime = -1, size_t frame = std::numeric_limits<size_t>::max());
         void draw();
         
         inline uint32_t getNumScenes()const { return mScenes.size(); }
@@ -45,6 +45,7 @@ namespace mediasystem {
         void addScene(std::shared_ptr<Scene> scene);
         void destroyScene(const std::string& name);
         void destroyScene(const std::shared_ptr<Scene>& scene);
+        void resetFrameTime();
         
         std::shared_ptr<Scene> getCurrentScene() const { return mCurrentScene; }
         std::shared_ptr<Scene> getNextScene() const { return mNextScene; }
@@ -57,7 +58,8 @@ namespace mediasystem {
 
         void transition();
         EventStatus swapScenes(const IEventRef&);
-
+        float mPrevTime{0.f};
+        bool mSetTime{false};
         std::shared_ptr<Scene> mNextScene{nullptr};
         std::shared_ptr<Scene> mCurrentScene{nullptr};
 		std::vector<std::shared_ptr<Scene>> mScenes;

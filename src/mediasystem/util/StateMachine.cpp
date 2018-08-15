@@ -30,7 +30,7 @@ void StateMachine::State::exit(float elapsedTime)
         mExit();
 }
 
-void StateMachine::State::update(size_t frame, float elapsedTime)
+void StateMachine::State::update(size_t frame, float elapsedTime, float lastFrameTime)
 {
     if(mIsTransitioning){
         switch(mTransitionDirection){
@@ -59,9 +59,9 @@ void StateMachine::State::update(size_t frame, float elapsedTime)
         }
     }
     if(mUpdate)
-        mUpdate(frame,elapsedTime);
+        mUpdate(frame,elapsedTime, lastFrameTime);
     if(mPrevState && mPrevState->mIsTransitioning)
-        mPrevState->update(frame,elapsedTime);
+        mPrevState->update(frame,elapsedTime, lastFrameTime);
 }
 
 void StateMachine::addState(State state)
@@ -86,7 +86,7 @@ const std::string& StateMachine::getCurrentState() const
     return mCurrentState->getName();
 }
 
-void StateMachine::update(size_t frame, float elapsedTime)
+void StateMachine::update(size_t frame, float elapsedTime, float lastFrameTime)
 {
     while(!mRequestQueue.empty()){
         auto& requestedState = mRequestQueue.front();
@@ -106,5 +106,5 @@ void StateMachine::update(size_t frame, float elapsedTime)
         mRequestQueue.pop_front();
     }
     if(mCurrentState)
-        mCurrentState->update(frame, elapsedTime);
+        mCurrentState->update(frame, elapsedTime, lastFrameTime);
 }
