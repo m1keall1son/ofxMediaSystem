@@ -86,6 +86,7 @@ namespace mediasystem {
     {
         if(mCurrentScene){
             if(mNextScene){
+                mNextScene->mPreviousScene = mCurrentScene->getName();
                 mNextScene->notifyTransitionIn();
                 MS_LOG_VERBOSE("Transitioning to scene: " + mNextScene->getName());
             }

@@ -9,7 +9,7 @@
 #include <bitset>
 #include <memory>
 #include <numeric>
-#include "TypeID.hpp"
+#include "mediasystem/util/TypeID.hpp"
 #include "Scene.h"
 
 namespace mediasystem {
@@ -42,6 +42,7 @@ namespace mediasystem {
         Entity& operator=(const Entity&) = delete;
         
         bool destroy();
+        void clearComponents();
         
         inline bool isValid(){ return mId != std::numeric_limits<size_t>::max(); }
         inline size_t getId() const { return mId; }

@@ -77,35 +77,36 @@ namespace mediasystem {
         mComponents.reset();
     }
     
+    void Entity::clearComponents()
+    {
+        if(hasComponent<EntityGraph>()){
+            auto graph = getComponent<EntityGraph>();
+            if(auto p = graph->parent.lock()){
+                auto myNode = getComponent<ofNode>();
+                if(myNode)
+                    myNode->clearParent(true);
+            }
+            for(auto& child : graph->children){
+                if(auto ent = child.lock()){
+                    auto node = ent->getComponent<ofNode>();
+                    if(node)
+                        node->clearParent(true);
+                }
+            }
+        }
+        for(size_t i = 0; i < mComponents.size(); i++){
+            if(mComponents[i]){
+                if(auto compType = getType(i)){
+                    mScene.destroyComponent(compType, mId);
+                }
+            }
+        }
+        mComponents.reset();
+    }
+    
     bool Entity::destroy(){
         if(isValid()){
-            
-            if(hasComponent<EntityGraph>()){
-                auto graph = getComponent<EntityGraph>();
-                if(auto p = graph->parent.lock()){
-                    auto myNode = getComponent<ofNode>();
-                    if(myNode)
-                        myNode->clearParent(true);
-                }
-                for(auto& child : graph->children){
-                    if(auto ent = child.lock()){
-                        auto node = ent->getComponent<ofNode>();
-                        if(node)
-                            node->clearParent(true);
-                    }
-                }
-            }
-            
-            for(size_t i = 0; i < mComponents.size(); i++){
-                if(mComponents[i]){
-                    if(auto compType = getType(i)){
-                        mScene.destroyComponent(compType, mId);
-                    }
-                }
-            }
-            mComponents.reset();
             mScene.destroyEntity(mId);
-            mId = std::numeric_limits<size_t>::max();
             return true;
         }
         return false;

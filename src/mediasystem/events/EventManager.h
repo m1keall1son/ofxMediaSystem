@@ -15,7 +15,7 @@
 #include "mediasystem/util/TimedLockingQueue.hpp"
 #include "MultiCastDelegate.h"
 #include "Delegate.h"
-#include "mediasystem/core/TypeID.hpp"
+#include "mediasystem/util/TypeID.hpp"
 
 namespace mediasystem {
     

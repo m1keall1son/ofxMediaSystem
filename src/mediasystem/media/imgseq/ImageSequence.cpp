@@ -10,24 +10,23 @@ using namespace std::chrono;
 
 namespace mediasystem {
     
-    ImageSequenceBase::ImageSequenceBase(std::filesystem::path&& pathToImgDir, float fps, const Playable::Options& options) :
-    Playable(fps, options),
-    mImagesDir(std::move(pathToImgDir))
-    {}
-    
-    void ImageSequenceBase::setImgDir(std::filesystem::path&& pathToImgDir)
+    ImageSequenceBase::ImageSequenceBase(std::filesystem::path&& pathToImgDir, float fps, const Playable<uint32_t>::Options& options) :
+        Playable<uint32_t>(0),
+        mImagesDir(std::move(pathToImgDir)),
+        mFramerate(fps)
     {
-        mImagesDir = std::move(pathToImgDir);
-        mIsInit = false;
+        mInvFps = 1.f / mFramerate;
+        parseSource(pathToImgDir, mSeqPaths);
+        Playable<uint32_t>::init(mSeqPaths.size()-1,options);
     }
     
-    void ImageSequenceBase::initPaths( const std::filesystem::path& imageSequenceDir)
-    {
-        parseSource(imageSequenceDir, mSeqPaths);
-        mState.totalFrames = mSeqPaths.size();
-        if(mState.loopPointIn == std::numeric_limits<uint32_t>::max() || mState.loopPointOut == std::numeric_limits<uint32_t>::max()){
-            mState.loopPointIn = 0;
-            mState.loopPointOut = mState.totalFrames-1;
+    void ImageSequenceBase::update(float amount){
+        auto cur = amount + mElapsedFrameTime;
+        if (cur >= mInvFps) {
+            mElapsedFrameTime = 0.f;
+            step(1);
+        }else{
+            mElapsedFrameTime  = cur;
         }
     }
     
@@ -73,12 +72,11 @@ namespace mediasystem {
         
         PreloadImpl(std::filesystem::path&& pathToImgDir, float fps, const Playable::Options& options): ImageSequenceBase(std::move(pathToImgDir), fps, std::move(options))
         {
-            init();
+            load();
         }
         
-        void init()override{
+        void load()override{
             if(!mImagesDir.empty()){
-                initPaths(mImagesDir);
                 mImages.clear();
                 for ( auto & path : mSeqPaths ) {
                     ofImage surface;
@@ -91,7 +89,7 @@ namespace mediasystem {
         }
         
         ofTexture* getCurrentTexture()override {
-            return !mImages.empty() ? &mImages[getCurrentFrame() < mImages.size() ? getCurrentFrame() : mImages.size()-1].getTexture() : nullptr;
+            return !mImages.empty() ? &mImages[getCurrentPosition() < mImages.size() ? getCurrentPosition() : mImages.size()-1].getTexture() : nullptr;
         }
         
         glm::vec2 getSize() const override {
@@ -151,9 +149,8 @@ namespace mediasystem {
             ImageSequenceBase(std::move(pathToImgsDir), framerate, options)
         {
             mLoadingState = mState;
-            initPaths(mImagesDir);
             startDataLoadingThread();
-            init();
+            load();
         }
         
         ~StreamingImpl()
@@ -161,58 +158,145 @@ namespace mediasystem {
             stopDataLoadingThread();
         }
         
-        void step(double timestep) override
+        void step(uint32_t frames) override
         {
-            auto cur = timestep + mElapsedTime;
-            auto rate = (1.f/mFramerate);
-            if ((mState.isPlaying()) && !(mState.isPaused()) && cur >= rate) {
-                mElapsedTime = 0.0;
-                Frame retrieve;
+            if ((mState.isPlaying()) && !(mState.isPaused())) {
                 
-                auto expectedState = Playable::State::advance(mState);
-                
-                while(true){
-                    auto success = mQueue.tryPop(retrieve);
-                    if(success){
-                        
-                        if(retrieve.serial != mSerial) //pop until we find one thats current
-                            continue;
-                        
-                        if(retrieve.img){
-                            if(retrieve.frame != expectedState.currentFrame){
-                                //this should never happen
-                                MS_LOG_ERROR("popped an out of order frame off the queue, should have been " << expectedState.currentFrame << "but received " << retrieve.frame);
-                            }
-                            mState.currentFrame = retrieve.frame;
-                            mCurrentImage.allocate(retrieve.img->getPixels());
-                            
-                            if(retrieve.finished){
-                                ofLogNotice() << mSeqPaths[0].string() << " finished!";
-                                mState.setFinished();
-                                ImageSequenceBase::stop();
-                            }
-                            
-                            auto keyframe = mKeyFrames.find(mState.currentFrame);
-                            if(keyframe != mKeyFrames.end()){
-                                auto tmp = mState;
-                                keyframe->second(tmp);
-                                if(tmp != mState){
-                                    mState = tmp;
-                                    flushQueue();
-                                }
-                            }
-                            
-                        }else{
-                            MS_LOG_WARNING("stream failed to retrieve an image from new frame! expected frame: " << expectedState.currentFrame << " current frame: " << mState.currentFrame);
-                        }
-                    }else{
-                        MS_LOG_WARNING("stream failed to acquire new frame! expected frame: " << expectedState.currentFrame << " current frame: " << mState.currentFrame);
-                        ++mMissedFrames;
+                //check delay
+                if(mDelayElapsed >= mDelay){
+                    if(mWaitingOnDelay){
+                        if(mOnStartAfterDelay)
+                            mOnStartAfterDelay();
+                        mWaitingOnDelay = false;
                     }
-                    break;
+                    
+                    Frame retrieve;
+                    
+                    auto prevPosition = mState.currentPosition;
+                    auto prevReverse = mState.isReversed();
+                    
+                    auto expectedState = Playable<uint32_t>::State::advance(mState,frames);
+                    
+                    while(true){
+                        auto success = mQueue.tryPop(retrieve);
+                        if(success){
+                            
+                            if(retrieve.serial != mSerial) //pop until we find one thats current
+                                continue;
+                            
+                            if(retrieve.img){
+                                if(retrieve.frame != expectedState.currentPosition){
+                                    //this should never happen
+                                    MS_LOG_ERROR("popped an out of order frame off the queue, should have been " << expectedState.currentPosition << "but received " << retrieve.frame);
+                                }
+                                mState.currentPosition = retrieve.frame;
+                                mCurrentImage.allocate(retrieve.img->getPixels());
+                                
+                                if(retrieve.finished){
+                                    ofLogNotice() << mSeqPaths[0].string() << " finished!";
+                                    mState.setFinished();
+                                    ImageSequenceBase::stop();
+                                    if(mOnFinishFn)
+                                        mOnFinishFn();
+                                    return;
+                                }
+                                
+                                if(mOnUpdateFn)
+                                    mOnUpdateFn();
+                                
+                                //check loop
+                                if(mState.isLooping()){
+                                    if(mState.isPalindrome()){
+                                        if(mState.isReversed() != prevReverse){
+                                            if(mOnLoopedFn)
+                                                mOnLoopedFn();
+                                            resetKeyFrames();
+                                        }
+                                    }else{
+                                        if(mState.isReversed()){
+                                            if(mState.currentPosition > prevPosition){
+                                                if(mOnLoopedFn)
+                                                    mOnLoopedFn();
+                                                resetKeyFrames();
+                                            }
+                                        }else{
+                                            if(mState.currentPosition < prevPosition){
+                                                if(mOnLoopedFn)
+                                                    mOnLoopedFn();
+                                                resetKeyFrames();
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                //check keyframes
+                                if(!mKeyFrames.empty() && mCurrentKeyFrame != mKeyFrames.end()){
+                                    if(mState.isReversed()){
+                                        if( mState.currentPosition <= mCurrentKeyFrame->position){
+                                            mCurrentKeyFrame->callback(mState);
+                                            if(mCurrentKeyFrame == mKeyFrames.begin()){
+                                                mCurrentKeyFrame = mKeyFrames.end();
+                                            }else{
+                                                auto it = --mCurrentKeyFrame;
+                                                bool done = false;
+                                                while(!done){
+                                                    if(mState.currentPosition <= it->position){
+                                                        auto tmp = mState;
+                                                        mCurrentKeyFrame->callback(mState);
+                                                        if(tmp != mState){
+                                                            mState = tmp;
+                                                            flushQueue();
+                                                        }
+                                                        if(mCurrentKeyFrame == mKeyFrames.begin()){
+                                                            done = true;
+                                                        }else{
+                                                            mCurrentKeyFrame = --it;
+                                                        }
+                                                    }else{
+                                                        done = true;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }else{
+                                        if(mState.currentPosition >= mCurrentKeyFrame->position){
+                                            auto tmp = mState;
+                                            mCurrentKeyFrame->callback(mState);
+                                            if(tmp != mState){
+                                                mState = tmp;
+                                                flushQueue();
+                                            }
+                                            auto it = ++mCurrentKeyFrame;
+                                            while(it != mKeyFrames.end()){
+                                                if(mState.currentPosition >= it->position){
+                                                    auto tmp = mState;
+                                                    mCurrentKeyFrame->callback(mState);
+                                                    if(tmp != mState){
+                                                        mState = tmp;
+                                                        flushQueue();
+                                                    }
+                                                    mCurrentKeyFrame = ++it;
+                                                }else{
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                            }else{
+                                MS_LOG_WARNING("stream failed to retrieve an image from new frame! expected frame: " << expectedState.currentPosition << " current frame: " << mState.currentPosition);
+                            }
+                        }else{
+                            MS_LOG_WARNING("stream failed to acquire new frame! expected frame: " << expectedState.currentPosition << " current frame: " << mState.currentPosition);
+                            ++mMissedFrames;
+                        }
+                        break;
+                    }
+                    
+                }else{
+                    mDelayElapsed += frames;
                 }
-            }else{
-                mElapsedTime += timestep;
             }
         }
         
@@ -223,14 +307,14 @@ namespace mediasystem {
             ofLogNotice() << mSeqPaths[0].string() << " starting!";
         }
         
-        void init()override{
+        void load()override{
             if(!mImagesDir.empty()){
                 mCurrentImage.clear();
                 reset();
                 //load first frame
                 ofImage img;
                 img.setUseTexture(false);
-                img.load(mSeqPaths[mState.currentFrame]);
+                img.load(mSeqPaths[mState.currentPosition]);
                 mCurrentImage.allocate(img.getPixels());
                 mIsInit = true;
             }
@@ -253,8 +337,8 @@ namespace mediasystem {
             mState.setReverse(flag);
             flushQueue();
         }
-        void setBoomarang(const bool flag = true)override{
-            mState.setBoomarang(flag);
+        void setPalindrome(const bool flag = true)override{
+            mState.setPalindrome(flag);
             if(mState.isLooping())
                 flushQueue();
         }
@@ -284,12 +368,6 @@ namespace mediasystem {
         
     private:
         
-        void initPaths(const std::filesystem::path& imageSequenceDir)override
-        {
-            ImageSequenceBase::initPaths(imageSequenceDir);
-            mLoadingState = mState;
-        }
-
         void flushQueue()
         {
             {
@@ -299,9 +377,9 @@ namespace mediasystem {
                 auto count = mQueue.size();
                 Playable::State tmp = mState;
                 for(size_t i = 0; i < count; i++){
-                    tmp = Playable::State::advance(tmp);
+                    tmp = Playable::State::advance(tmp, 1);
                     auto frame = mQueue.peek(i);
-                    if(frame->frame == tmp.currentFrame){
+                    if(frame->frame == tmp.currentPosition){
                         frame->serial = mSerial;
                         frame->finished = tmp.isFinished();
                         mLoadingState = tmp;
@@ -339,8 +417,8 @@ namespace mediasystem {
                 bool fin = false;
                 {
                     std::lock_guard<std::mutex> lock(mPlaystateMutex);
-                    mLoadingState = Playable::State::advance( mLoadingState );
-                    curFrame = mLoadingState.currentFrame;
+                    mLoadingState = Playable::State::advance( mLoadingState, 1 );
+                    curFrame = mLoadingState.currentPosition;
                     serial = mSerial;
                     fin = mLoadingState.isFinished();
                     if(fin){

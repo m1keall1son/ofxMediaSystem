@@ -9,7 +9,7 @@
 
 #include <string>
 #include "mediasystem/events/IEvent.h"
-#include "mediasystem/core/TypeID.hpp"
+#include "mediasystem/util/TypeID.hpp"
 
 namespace mediasystem {
     

@@ -33,7 +33,7 @@ namespace mediasystem {
         
         auto seqit = mImageSequences.iter();
         while (auto seq = seqit.next()) {
-            seq->step(update->getLastFrameTime());
+            seq->update(update->getLastFrameTime());
         }
         
         return EventStatus::SUCCESS;

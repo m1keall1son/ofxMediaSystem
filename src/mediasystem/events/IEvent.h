@@ -8,7 +8,7 @@
 #pragma once
 #include <stdint.h>
 #include <memory>
-#include "mediasystem/core/TypeID.hpp"
+#include "mediasystem/util/TypeID.hpp"
 
 namespace mediasystem {
 

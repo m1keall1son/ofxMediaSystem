@@ -40,11 +40,21 @@ namespace mediasystem {
     {
         auto found = mEntities.find(id);
         if(found != mEntities.end()){
-            queueEvent<DestroyEntity>(found->second);
-            mEntities.erase(found);
+            mDestroyedEntities.push_back(id);
+            triggerEvent<DestroyEntity>(found->second);
+            found->second->clearComponents();
             return true;
         }
         return false;
+    }
+    
+    void Scene::collectEntities()
+    {
+        for(int i = 0; i < mDestroyedEntities.size(); i++){
+            auto entId = mDestroyedEntities.front();
+            mEntities.erase(entId);
+            mDestroyedEntities.pop_front();
+        }
     }
     
     bool Scene::destroyEntity(EntityHandle handle)
@@ -147,6 +157,7 @@ namespace mediasystem {
         triggerEvent<Update>(*this, elapsedFrames, elapsedTime, prevFrameTime);
         //process any events queued by other systems and components, etc.
         processEvents();
+        collectEntities();
     }
     
     void Scene::notifyStart()
@@ -203,12 +214,8 @@ namespace mediasystem {
     {
         shutdown();
         triggerEvent<Shutdown>(*this);
-        std::vector<size_t> ids(mEntities.size());
         for(auto & ent : mEntities){
-            ids.push_back(ent.first);
-        }
-        for(auto & id : ids){
-            destroyEntity(id);
+            ent.second->clearComponents();
         }
         mComponentManager.clear();
         mEntities.clear();

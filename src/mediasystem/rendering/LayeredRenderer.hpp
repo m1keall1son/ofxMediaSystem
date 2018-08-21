@@ -39,7 +39,9 @@ public:
     float getDrawOrder() const { return mDrawOrder; }
     bool isVisible()const{ return mVisible; }
     const ofFloatColor& getColor()const{ return mColor; }
+    ofFloatColor* getColorPtr(){ return &mColor; }
     float getAlpha() const { return mColor.a; }
+    float* getAlphaPtr() { return &mColor.a; }
     glm::mat4 getGlobalTransformMatrix(){
         if(auto node = mEntity.getComponent<ofNode>()){
             return node->getGlobalTransformMatrix();

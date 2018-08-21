@@ -10,7 +10,7 @@
 #include <memory>
 #include <unordered_map>
 #include <map>
-#include "TypeID.hpp"
+#include "mediasystem/util/TypeID.hpp"
 
 namespace mediasystem {
     

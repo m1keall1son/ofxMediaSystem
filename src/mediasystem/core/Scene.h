@@ -121,10 +121,14 @@ namespace mediasystem {
         virtual void transitionInComplete(){}
         virtual void transitionOutComplete(){}
         
+        inline const std::string& getPreviousSceneName() const { return mPreviousScene; }
+        
 		std::string	mName;
         std::unordered_map<size_t, EntityRef> mEntities;
 
 	private:
+        
+        void collectEntities();
         
         void notifyStart();
         void notifyStop();
@@ -141,6 +145,9 @@ namespace mediasystem {
         bool mHasStarted{false};
         ComponentManager mComponentManager;
         SystemManager mSystemManager;
+        std::deque<size_t> mDestroyedEntities;
+        std::string mPreviousScene;
+        friend class SceneManager;
 	};
 
 }//end namespace mediasystem

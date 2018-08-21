@@ -12,7 +12,7 @@
 
 namespace mediasystem {
     
-    using ManagedResourceId = uint16_t;
+    using ManagedResourceKey = std::string;
     
     template<typename T>
     class Manager {
@@ -25,24 +25,26 @@ namespace mediasystem {
         }
         
         template<typename ManageableType, typename...Args>
-        std::pair<ManagedResourceId,std::shared_ptr<ManageableType>> create(Args&&...args){
+        std::weak_ptr<ManageableType> create(ManagedResourceKey key, Args&&...args){
             static_assert(std::is_base_of<T,ManageableType>::value, "Type passed to this create function must be the same or dervie from the managed type");
-            auto id = sNextId++;
-            auto ret = std::make_pair(id,std::make_shared<ManageableType>(std::forward<Args>(args)...));
-            mManaged.insert(ret);
-            return ret;
+            auto it = mManaged.emplace(std::move(key),std::make_shared<ManageableType>(std::forward<Args>(args)...));
+            if(it.second){
+                return std::weak_ptr<ManageableType>(it.first->second);
+            }
+            return std::weak_ptr<ManageableType>();
         }
         
         template<typename ManageableType, typename Allocator, typename...Args>
-        std::pair<ManagedResourceId,std::shared_ptr<ManageableType>> allocate(const Allocator& alloc, Args&&...args){
+        std::weak_ptr<ManageableType> allocate(ManagedResourceKey key, const Allocator& alloc, Args&&...args){
             static_assert(std::is_base_of<T,ManageableType>::value, "Type passed to this create function must be the same or dervie from the managed type");
-            auto id = sNextId++;
-            auto ret = std::make_pair(id,std::allocate_shared<ManageableType>(alloc, std::forward<Args>(args)...));
-            mManaged.insert(ret);
-            return ret;
+            auto it = mManaged.emplace(std::move(key),std::allocate_shared<ManageableType>(alloc, std::forward<Args>(args)...));
+            if(it.second){
+                return std::weak_ptr<ManageableType>(it.first->second);
+            }
+            return std::weak_ptr<ManageableType>();
         }
         
-        std::weak_ptr<T> retrieve(ManagedResourceId id){
+        std::weak_ptr<T> retrieve(ManagedResourceKey id){
             auto found = mManaged.find(id);
             if(found != mManaged.end()){
                 return std::weak_ptr<T>(found->second);
@@ -51,8 +53,8 @@ namespace mediasystem {
             }
         }
         
-        void remove(ManagedResourceId id){
-            mManaged.erase(id);
+        bool remove(ManagedResourceKey key){
+            return mManaged.erase(key) > 0;
         }
         
         void clear(){
@@ -60,17 +62,10 @@ namespace mediasystem {
         }
         
     protected:
-        
-        std::unordered_map<ManagedResourceId, std::shared_ptr<T>>& getManagedItems(){ return mManaged; }
-        
+        std::unordered_map<ManagedResourceKey, std::shared_ptr<T>>& getManagedItems(){ return mManaged; }
     private:
-        
-        std::unordered_map<ManagedResourceId, std::shared_ptr<T>> mManaged;
-        static size_t sNextId;
-        
+        std::unordered_map<ManagedResourceKey, std::shared_ptr<T>> mManaged;
     };
     
 }//end namespace mediasystem
 
-template<typename ManagedType>
-size_t mediasystem::Manager<ManagedType>::sNextId = 0;

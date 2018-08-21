@@ -8,10 +8,10 @@
 #include "mediasystem/core/Scene.h"
 #include "mediasystem/events/GlobalEvents.h"
 #include "mediasystem/util/Util.h"
-#include "mediasystem/util/StateMachine.h"
-#include "mediasystem/util/Singleton.hpp"
 #include "mediasystem/media/imgseq/ImageSequence.h"
 #include "mediasystem/media/MediaUpdateSystem.h"
+#include "mediasystem/animation/Animation.hpp"
+#include "mediasystem/animation/Easing.hpp"
 
 namespace ms = mediasystem;
 

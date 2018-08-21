@@ -1,14 +1,15 @@
 #pragma once
 
-#include "ofMain.h"
-#include "mediasystem/util/Singleton.hpp"
-#include "mediasystem/util/TimeManager.h"
-
-namespace mediasystem {
-
-	std::string randString(size_t length);
-    
-    float& getDebugFontSize();
-    std::shared_ptr<ofTrueTypeFont> getDebugFont(float size = getDebugFontSize());
-
-}//end namespace pf
+#include "Log.h"
+#include "Singleton.hpp"
+#include "LockingQueue.hpp"
+#include "TupleHelpers.hpp"
+#include "EstimatedMovingAverage.hpp"
+#include "GlslDefine.h"
+#include "TypeID.hpp"
+#include "BasicTimer.hpp"
+#include "Profiler.hpp"
+#include "RandString.hpp"
+#include "TimedLockingQueue.hpp"
+#include "Manager.hpp"
+#include "StateMachine.h"
