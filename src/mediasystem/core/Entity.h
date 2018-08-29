@@ -28,8 +28,9 @@ namespace mediasystem {
         
         void setParent(EntityHandle p, bool keepGlobalPosition = true);
         void clearParent(bool keepGlobalPosition = true);
-        void addChild(EntityHandle child);
+        void addChild(EntityHandle child, bool keepGlobalPosition = true);
         void removeChild(EntityHandle child, bool keepGlobalPosition = true);
+        
     };
     
     class Entity {

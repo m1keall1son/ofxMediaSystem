@@ -26,24 +26,39 @@ namespace mediasystem {
             auto node = ent->getComponent<ofNode>();
             auto myNode = self.getComponent<ofNode>();
             myNode->setParent(*node, keepGlobalPosition);
+            auto graph = ent->getComponent<EntityGraph>();
+            graph->children.push_back(self.getScene().getEntity(self.getId()));
         }
     }
     
-    void EntityGraph::clearParent(bool keepGlobalPosition)
+    void EntityGraph::clearParent(bool keepTransform)
     {
-        if(auto ent = parent.lock()){
-            auto myNode = self.getComponent<ofNode>();
-            myNode->clearParent(keepGlobalPosition);
-            parent.reset();
+        if(auto p = parent.lock()){
+            auto graph = p->getComponent<EntityGraph>();
+            //remove self as child
+            auto it = graph->children.begin();
+            auto end = graph->children.end();
+            while(it != end){
+                if(auto ch = (*it).lock()){
+                    if(ch.get() == &self){
+                        auto node = ch->getComponent<ofNode>();
+                        node->clearParent(keepTransform);
+                        graph->children.erase(it);
+                        parent.reset();
+                        return;
+                    }
+                    ++it;
+                }else{
+                    it = graph->children.erase(it);
+                }
+            }
         }
     }
     
-    void EntityGraph::addChild(EntityHandle child){
+    void EntityGraph::addChild(EntityHandle child, bool keepGlobalPosition){
+        auto myHandle = self.getScene().getEntity(self.getId());
         if(auto ent = child.lock()){
-            auto node = ent->getComponent<ofNode>();
-            auto myNode = self.getComponent<ofNode>().get();
-            node->setParent(*myNode);
-            children.emplace_back(std::move(child));
+            ent->setParent(myHandle);
         }
     }
     
@@ -54,9 +69,7 @@ namespace mediasystem {
             while(it != end){
                 if(auto ch = (*it).lock()){
                     if(ch.get() == ent.get()){
-                        auto node = ch->getComponent<ofNode>();
-                        node->clearParent(keepGlobalPosition);
-                        children.erase(it);
+                        ch->clearParent(keepGlobalPosition);
                         return;
                     }
                     ++it;
