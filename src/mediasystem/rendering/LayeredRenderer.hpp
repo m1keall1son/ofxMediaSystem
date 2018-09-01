@@ -84,16 +84,16 @@ public:
     LayeredRenderer(Scene& scene):
     mScene(scene)
     {
-        mLayers.emplace_back("default", std::make_shared<DefaultPresenter>(), 0.f);
+        mLayers.emplace_back("default", std::make_shared<DefaultPresenter>(), std::numeric_limits<float>::max());
         mScene.addDelegate<Draw>(EventDelegate::create<LayeredRenderer,&LayeredRenderer::onDraw>(this));
         int l[] = {(addNewComponentDelegate<DrawableTypes>(),0)...};
-        (void)l;
+        UNUSED_VARIABLE(l);
     }
     
     ~LayeredRenderer(){
         mScene.removeDelegate<Draw>(EventDelegate::create<LayeredRenderer,&LayeredRenderer::onDraw>(this));
         int l[] = {(removeNewComponentDelegate<DrawableTypes>(),0)...};
-        (void)l;
+        UNUSED_VARIABLE(l);
     }
 
     void addLayer(std::string name, std::shared_ptr<IPresenter> presenter = std::make_shared<DefaultPresenter>(), float order = 0.f){
@@ -107,7 +107,7 @@ public:
         }
     }
     
-    void setDefault(std::shared_ptr<IPresenter> presenter, float order = 0.f){
+    void setDefault(std::shared_ptr<IPresenter> presenter, float order = std::numeric_limits<float>::max()){
         auto found = std::find_if(mLayers.begin(), mLayers.end(), [](const Layer& layer){
             return layer.name == "default";
         });

@@ -12,6 +12,7 @@
 #include "mediasystem/media/MediaUpdateSystem.h"
 #include "mediasystem/animation/Animation.hpp"
 #include "mediasystem/animation/Easing.hpp"
+#include "mediasystem/util/AssetManager.hpp"
 
 namespace ms = mediasystem;
 

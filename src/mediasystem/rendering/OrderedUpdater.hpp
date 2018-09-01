@@ -53,13 +53,13 @@ namespace mediasystem {
         {
             mScene.addDelegate<Update>(EventDelegate::create<OrderedUpdater,&OrderedUpdater::onUpdate>(this));
             int l[] = {(addNewComponentDelegate<UpdateableTypes>(),0)...};
-            (void)l;
+            UNUSED_VARIABLE(l);
         }
         
         ~OrderedUpdater(){
             mScene.removeDelegate<Update>(EventDelegate::create<OrderedUpdater,&OrderedUpdater::onUpdate>(this));
             int l[] = {(removeNewComponentDelegate<UpdateableTypes>(),0)...};
-            (void)l;
+            UNUSED_VARIABLE(l);
         }
     
         void update(){
