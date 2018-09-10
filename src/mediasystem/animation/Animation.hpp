@@ -160,12 +160,13 @@ namespace mediasystem {
         std::shared_ptr<Animatable<float>> createAnimation(std::string name, float start, float end, float duration, EaseFn easing = nullptr, Animatable<float>::Options opts = Animatable<float>::Options()){
             std::shared_ptr<Animatable<float>> ret;
             ret.reset(new Animatable<float>(start, end, duration, std::move(easing), std::move(opts)));
-            auto it = mAnimations.emplace(std::move(name),std::weak_ptr<Animatable<float>>(ret));
-            if(it.first){
-                return ret;
+            auto found = mAnimations.find(name);
+            if(found == mAnimations.end()){
+                mAnimations.emplace(std::move(name),ret);
             }else{
-                return it.second;
+                (*found).second = ret;
             }
+            return ret;
         }
         
     private:
