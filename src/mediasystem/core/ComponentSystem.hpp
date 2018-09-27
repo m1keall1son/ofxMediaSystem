@@ -8,9 +8,10 @@
 #pragma once
 #include <stddef.h>
 #include <memory>
-#include <unordered_map>
 #include <map>
 #include "mediasystem/util/TypeID.hpp"
+#include "../util/Log.h"
+#include "../memory/Memory.h"
 
 namespace mediasystem {
     
@@ -34,6 +35,7 @@ namespace mediasystem {
             if(it.second){
                 return shared;
             }else{
+                MS_LOG_ERROR("SystemManager: CANNOT CREATE SYSTEM");
                 return nullptr;
             }
         }
@@ -45,6 +47,7 @@ namespace mediasystem {
                 auto shared = std::static_pointer_cast<SystemType>(found->second);
                 return std::move(shared);
             }else{
+                MS_LOG_ERROR("SystemManager: DOES NOT HAVE SYSTEM");
                 return nullptr;
             }
         }
@@ -56,6 +59,7 @@ namespace mediasystem {
                 mSystems.erase(found);
                 return true;
             }else{
+                MS_LOG_ERROR("SystemManager: DOES NOT HAVE SYSTEM");
                 return false;
             }
         }
@@ -68,7 +72,12 @@ namespace mediasystem {
         std::map<type_id_t, std::shared_ptr<void>> mSystems;
     };
     
-    using GenericComponentMap = std::unordered_map<size_t, std::shared_ptr<void>>;
+    namespace detail {
+        using GenericHandle = std::shared_ptr<void>;
+        using GenericHandleAllocator = DynamicAllocator<std::pair<const size_t, GenericHandle>>;
+    }
+    
+    using GenericComponentMap = std::map<size_t, detail::GenericHandle, std::less<size_t>, detail::GenericHandleAllocator>;
     
     //adapter class
     template<typename ComponentType>
@@ -86,10 +95,9 @@ namespace mediasystem {
             }
         private:
             iterator() = default;
-            iterator( std::unordered_map<size_t, std::shared_ptr<void>>::iterator begin, std::unordered_map<size_t, std::shared_ptr<void>>::iterator end ):mIt(begin),mEnd(){}
-            
-            std::unordered_map<size_t, std::shared_ptr<void>>::iterator mIt;
-            std::unordered_map<size_t, std::shared_ptr<void>>::iterator mEnd;
+            iterator( GenericComponentMap::iterator begin, GenericComponentMap::iterator end ):mIt(begin),mEnd(end){}
+            GenericComponentMap::iterator mIt;
+            GenericComponentMap::iterator mEnd;
             friend ComponentMap;
         };
         
@@ -108,13 +116,32 @@ namespace mediasystem {
             
         template<typename ComponentType, typename...Args>
         std::weak_ptr<ComponentType> create(size_t entity_id, Args&&...args){
-            auto shared = std::make_shared<ComponentType>(std::forward<Args>(args)...);
+            using ComponentAllocator = Allocator<ComponentType, PoolAllocator<ComponentType,BlockListStorage,1024>>; //1MB blocks
+            auto shared = std::allocate_shared<ComponentType>(ComponentAllocator(), std::forward<Args>(args)...);
             auto generic = std::static_pointer_cast<void>(shared);
-            auto it = mComponents[type_id<ComponentType>].emplace( entity_id, std::move(generic) );
-            if(it.second){
-                return shared;
+            auto found = mComponents.find(type_id<ComponentType>);
+            if(found != mComponents.end()){
+                auto it = found->second.emplace( entity_id, std::move(generic) );
+                if(it.second){
+                    return shared;
+                }else{
+                    MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " COULD NOT CREATE COMPONENT");
+                    return std::weak_ptr<ComponentType>();
+                }
             }else{
-                return std::weak_ptr<ComponentType>();
+                auto it = mComponents.emplace(type_id<ComponentType>, GenericComponentMap(detail::GenericHandleAllocator()));
+                if(it.second){
+                    auto res = it.first->second.emplace(entity_id, std::move(generic));
+                    if(res.second){
+                        return shared;
+                    }else{
+                        MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " COULD NOT CREATE COMPONENT");
+                        return std::weak_ptr<ComponentType>();
+                    }
+                }else{
+                    MS_LOG_ERROR("ComponentManager: COULD NOT CREATE GENERIC COMPONENT MAP FOR COMPONENT TYPE");
+                    return std::weak_ptr<ComponentType>();
+                }
             }
         }
         
@@ -125,6 +152,7 @@ namespace mediasystem {
                 auto cast = std::static_pointer_cast<ComponentType>(found->second);
                 return cast;
             }else{
+                MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
                 return std::weak_ptr<ComponentType>();
             }
         }
@@ -134,6 +162,7 @@ namespace mediasystem {
             if(found != mComponents[type].end()){
                 return found->second;
             }else{
+                MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
                 return std::weak_ptr<void>();
             }
         }
@@ -145,6 +174,7 @@ namespace mediasystem {
                 mComponents[type_id<ComponentType>].erase(found);
                 return true;
             }else{
+                MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
                 return false;
             }
         }
@@ -156,6 +186,7 @@ namespace mediasystem {
                 mComponents[type].erase(found);
                 return true;
             }else{
+                MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
                 return false;
             }
         }

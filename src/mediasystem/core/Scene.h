@@ -1,10 +1,11 @@
 #pragma once
 #include <string>
-#include <unordered_map>
+#include <map>
 #include "ofMain.h"
 #include "mediasystem/events/EventManager.h"
 #include "mediasystem/core/ComponentSystem.hpp"
 #include "mediasystem/events/SceneEvents.h"
+#include "mediasystem/util/StateMachine.h"
 
 namespace mediasystem {
     
@@ -100,6 +101,10 @@ namespace mediasystem {
         void setTransitionDuration(TransitionDir direction, float duration);
         float getPercentTransitionComplete() const;
         
+        void requestState(std::string state);
+        void addState(StateMachine::State&& state);
+        void addChildState(std::string parent, StateMachine::State&& state);
+        
 	protected:
         
         virtual void init(){}
@@ -124,7 +129,7 @@ namespace mediasystem {
         inline const std::string& getPreviousSceneName() const { return mPreviousScene; }
         
 		std::string	mName;
-        std::unordered_map<size_t, EntityRef> mEntities;
+        std::map<size_t, EntityRef, std::less<size_t>, DynamicAllocator<std::pair<const size_t, EntityRef>>> mEntities;
 
 	private:
         
@@ -147,6 +152,7 @@ namespace mediasystem {
         SystemManager mSystemManager;
         std::deque<size_t> mDestroyedEntities;
         std::string mPreviousScene;
+        StateMachine mSequence;
         friend class SceneManager;
 	};
 

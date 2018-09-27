@@ -40,10 +40,16 @@ namespace mediasystem {
         bool mEnabled{true};
     };
     
+    template<typename T>
+    using UpdateableHandle = std::weak_ptr<Updateable<T>>;
+    
+    template<typename T>
+    using UpdateableHandleList = std::list<UpdateableHandle<T>,DynamicAllocator<UpdateableHandle<T>,512>>; // 1/2 KB block size
+    
     template<typename...UpdateableTypes>
     class OrderedUpdater {
         
-        using OrderedList = std::tuple<std::list<std::weak_ptr<Updateable<UpdateableTypes>>>...>;
+        using OrderedList = std::tuple<UpdateableHandleList<UpdateableTypes>...>;
         using OderedListsMap = std::map<float, OrderedList>;
         
     public:
@@ -105,21 +111,21 @@ namespace mediasystem {
         }
         
         template<typename T>
-        void insertIntoOrderedList(float order, std::weak_ptr<Updateable<T>> handle){
+        void insertIntoOrderedList(float order, UpdateableHandle<T> handle){
             auto found = mOrderedLists.find(order);
             if(found != mOrderedLists.end()){
-                auto& list = get_element_by_type<std::list<std::weak_ptr<Updateable<T>>>>(found->second);
+                auto& list = get_element_by_type<UpdateableHandleList<T>>(found->second);
                 list.emplace_back(std::move(handle));
             }else{
                 OrderedList l;
-                auto& list = get_element_by_type<std::list<std::weak_ptr<Updateable<T>>>>(l);
+                auto& list = get_element_by_type<UpdateableHandleList<T>>(l);
                 list.emplace_back(std::move(handle));
                 mOrderedLists.emplace(order, std::move(l));
             }
         }
         
         template<typename T>
-        void checkOrder(float order, std::list<std::weak_ptr<Updateable<T>>>& handles){
+        void checkOrder(float order, UpdateableHandleList<T>& handles){
             auto it = handles.begin();
             auto end = handles.end();
             while( it != end ){
@@ -137,7 +143,7 @@ namespace mediasystem {
         }
         
         template<typename T>
-        void updateOrderedList(std::list<std::weak_ptr<Updateable<T>>>& handles){
+        void updateOrderedList(UpdateableHandleList<T>& handles){
             auto it = handles.begin();
             auto end = handles.end();
             while (it!=end) {

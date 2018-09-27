@@ -36,6 +36,7 @@ namespace mediasystem {
     class Entity {
     public:
         
+        explicit Entity(Scene& scene, uint64_t id);
         ~Entity() = default;
         
         //non copyable
@@ -161,8 +162,6 @@ namespace mediasystem {
             }
             return nullptr;
         }
-        
-        explicit Entity(Scene& scene, uint64_t id);
         
         static size_t sNextComponentId;
         std::bitset<32> mComponents;

@@ -24,7 +24,7 @@ namespace mediasystem {
     EntityHandle Scene::createEntity()
     {
         auto next = sNextEntityId++;
-        auto it = mEntities.emplace(next, EntityRef( new Entity(*this, next)));
+        auto it = mEntities.emplace(next, std::allocate_shared<Entity>(DynamicAllocator<Entity>(), *this, next));
         if(it.second){
             queueEvent<NewEntity>(it.first->second);
             //everyone gets a node component, because why not
@@ -50,7 +50,7 @@ namespace mediasystem {
     
     void Scene::collectEntities()
     {
-        for(int i = 0; i < mDestroyedEntities.size(); i++){
+        for(size_t i = 0; i < mDestroyedEntities.size(); i++){
             auto entId = mDestroyedEntities.front();
             mEntities.erase(entId);
             mDestroyedEntities.pop_front();
@@ -153,6 +153,7 @@ namespace mediasystem {
                 triggerEvent<TransitionUpdate>(*this);
             }
         }
+        mSequence.update(elapsedFrames,elapsedTime,prevFrameTime);
         update(elapsedFrames, elapsedTime, prevFrameTime);
         triggerEvent<Update>(*this, elapsedFrames, elapsedTime, prevFrameTime);
         //process any events queued by other systems and components, etc.
@@ -234,6 +235,21 @@ namespace mediasystem {
     {
         reset();
         queueEvent<Reset>(*this);
+    }
+    
+    void Scene::addState(StateMachine::State&& state)
+    {
+        mSequence.addState(std::move(state));
+    }
+    
+    void Scene::addChildState(std::string parent, StateMachine::State&& state)
+    {
+        mSequence.addChildState(std::move(parent), std::move(state));
+    }
+    
+    void Scene::requestState(std::string state)
+    {
+        mSequence.requestState(std::move(state));
     }
 
 }//end namespace mediasystem

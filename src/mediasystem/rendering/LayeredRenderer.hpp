@@ -61,11 +61,17 @@ private:
     std::string mLayer{"default"};
     bool mVisible{true};
 };
+    
+template<typename T>
+using DrawableHandle = std::weak_ptr<Drawable<T>>;
+
+template<typename T>
+using DrawableHandleList = std::list<DrawableHandle<T>,DynamicAllocator<DrawableHandle<T>,512>>; // 1/2 KB block size
 
 template<typename...DrawableTypes>
 class LayeredRenderer {
     
-    using TypesList = std::tuple<std::list<std::weak_ptr<Drawable<DrawableTypes>>>...>;
+    using TypesList = std::tuple<DrawableHandleList<DrawableTypes>...>;
     using OrderedLayer = std::map<float /* draw order */, TypesList>;
     struct Layer {
         Layer( std::string _name, std::shared_ptr<IPresenter> _presenter, float order = 0.f ):
@@ -171,27 +177,27 @@ private:
     }
     
     template<typename T>
-    void insertIntoOrderedLayer(const std::string& layerName, float order, std::weak_ptr<Drawable<T>> handle){
+    void insertIntoOrderedLayer(const std::string& layerName, float order, DrawableHandle<T> handle){
         auto found = std::find_if(mLayers.begin(), mLayers.end(), [&layerName](const Layer& layer){
             return layer.name == layerName;
         });
         if(found != mLayers.end()){
             //we have this layer, pull the typed list from the tuple at a given layer
-            auto& list = get_element_by_type<std::list<std::weak_ptr<Drawable<T>>>>(found->layer[order]);
+            auto& list = get_element_by_type<DrawableHandleList<T>>(found->layer[order]);
             list.emplace_back(std::move(handle));
         }else{
             //error and put it in default
             auto& defaultLayer = *(std::find_if(mLayers.begin(), mLayers.end(), [](const Layer& layer){
                 return layer.name == "default";
             }));
-            auto& list = get_element_by_type<std::list<std::weak_ptr<Drawable<T>>>>(defaultLayer.layer[order]);
+            auto& list = get_element_by_type<DrawableHandleList<T>>(defaultLayer.layer[order]);
             list.emplace_back(std::move(handle));
             MS_LOG_ERROR("Didnt have a rendering layer called: " + layerName + " placeing drawable in default layer.");
         }
     }
     
     template<typename T>
-    void checkOrder(const std::string& layer, float order, std::list<std::weak_ptr<Drawable<T>>>& handles){
+    void checkOrder(const std::string& layer, float order, DrawableHandleList<T>& handles){
         auto it = handles.begin();
         auto end = handles.end();
         while( it != end ){
@@ -209,7 +215,7 @@ private:
     }
     
     template<typename T>
-    void drawLayer(std::list<std::weak_ptr<Drawable<T>>>& handles){
+    void drawLayer(DrawableHandleList<T>& handles){
         auto it = handles.begin();
         auto end = handles.end();
         while (it!=end) {
