@@ -102,9 +102,7 @@ namespace mediasystem {
         using MaterialProxyWeakAllocator = DynamicAllocator<detail::MaterialProxyWeak<T>, MATERIAL_ALLOCATION_BLOCK_SIZE>;
         
     }//end namespace detail
-    
-    ofMesh meshFromRect(const ofRectangle& rect, bool normalized = true);
-    
+        
     class MeshRenderer {
     public:
         
@@ -126,7 +124,14 @@ namespace mediasystem {
             mMaterial(std::allocate_shared<detail::MaterialProxyWeak<BindableType>>(detail::MaterialProxyWeakAllocator<BindableType>(), std::move(material)))
         {}
         
-        void draw();
+        inline void draw()
+        {
+            if(mMaterial)
+                mMaterial->bind();
+            mMesh.draw();
+            if(mMaterial)
+                mMaterial->unbind();
+        }
         
         template<typename MaterialType>
         std::shared_ptr<MaterialType> getMaterial(){
@@ -144,5 +149,40 @@ namespace mediasystem {
         ofMesh mMesh;
         std::shared_ptr<detail::IMaterial> mMaterial;
     };
+    
+    inline ofMesh meshFromRect(const ofRectangle& rect, bool normalized = true)
+    {
+        ofMesh mesh;
+        mesh.setMode(OF_PRIMITIVE_TRIANGLES);
+        
+        mesh.addVertex(rect.getTopLeft());
+        mesh.addVertex(rect.getBottomLeft());
+        mesh.addVertex(rect.getTopRight());
+        
+        mesh.addVertex(rect.getTopRight());
+        mesh.addVertex(rect.getBottomLeft());
+        mesh.addVertex(rect.getBottomRight());
+        
+        if(normalized){
+            mesh.addTexCoord(glm::vec2(0,0));
+            mesh.addTexCoord(glm::vec2(0,1));
+            mesh.addTexCoord(glm::vec2(1,0));
+            
+            mesh.addTexCoord(glm::vec2(1,0));
+            mesh.addTexCoord(glm::vec2(0,1));
+            mesh.addTexCoord(glm::vec2(1,1));
+            
+        }else{
+            mesh.addTexCoord(glm::vec2(rect.getTopLeft()));
+            mesh.addTexCoord(glm::vec2(rect.getBottomLeft()));
+            mesh.addTexCoord(glm::vec2(rect.getTopRight()));
+            
+            mesh.addTexCoord(glm::vec2(rect.getTopRight()));
+            mesh.addTexCoord(glm::vec2(rect.getBottomLeft()));
+            mesh.addTexCoord(glm::vec2(rect.getBottomRight()));
+        }
+        
+        return mesh;
+    }
     
 }//end namespace mediasystem

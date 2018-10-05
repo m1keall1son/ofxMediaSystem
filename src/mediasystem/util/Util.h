@@ -13,3 +13,4 @@
 #include "TimedLockingQueue.hpp"
 #include "Manager.hpp"
 #include "StateMachine.h"
+#include "MemberDetection.hpp"
