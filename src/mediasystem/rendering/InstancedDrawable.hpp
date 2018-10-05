@@ -21,26 +21,31 @@ namespace mediasystem {
     template<>
     struct AttribInfo<float> {
         constexpr static int components = 1;
+        constexpr static const char* name(){ return "float"; }
     };
     
     template<>
     struct AttribInfo<glm::vec2> {
         constexpr static int components = 2;
+        constexpr static const char* name(){ return "vec2"; }
     };
     
     template<>
     struct AttribInfo<glm::vec3> {
         constexpr static int components = 3;
+        constexpr static const char* name(){ return "vec3"; }
     };
     
     template<>
     struct AttribInfo<glm::vec4> {
         constexpr static int components = 4;
+        constexpr static const char* name(){ return "vec4"; }
     };
     
     template<>
     struct AttribInfo<glm::mat4> {
         constexpr static int components = 16;
+        constexpr static const char* name(){ return "mat4"; }
     };
     
     struct AttributeCreator {
@@ -54,7 +59,13 @@ namespace mediasystem {
         void operator()(T& type){
             static_assert( std::is_same<glm::mat4,T>::value ||  std::is_same<glm::vec2,T>::value || std::is_same<glm::vec3,T>::value || std::is_same<glm::vec4,T>::value || std::is_same<float,T>::value, "GPUTypes can only be a float, or glm::vec* or glm::mat4" );
             auto comp = AttribInfo<T>::components;
+#if defined(TARGET_LINUX)
+            mesh.getVbo().setAttributeBuffer(location, buffer, comp, stride, stride - (offset + sizeof(T)));
+            ofLogVerbose("AttributeCreator") << "(linux- offsets are inverted?) attrib " << AttribInfo<T>::name() << " locaton: " << location << " components: " << comp << "  stride: " << stride << " offset: " << stride - (offset + sizeof(T));
+#else
             mesh.getVbo().setAttributeBuffer(location, buffer, comp, stride, offset);
+               ofLogVerbose("AttributeCreator") << "attrib " << AttribInfo<T>::name() << " locaton: " << location << " components: " << comp << "  stride: " << stride << " offset: " << offset;
+#endif
             mesh.getVbo().setAttributeDivisor(location, 1);
             ++location;
             offset += sizeof(T);
@@ -64,7 +75,13 @@ namespace mediasystem {
     template<>
     inline void AttributeCreator::operator()(glm::mat4& matrix){
         for(int i =0; i<4; i++){
+#if defined(TARGET_LINUX)
+            mesh.getVbo().setAttributeBuffer(location, buffer, 4, stride, stride - (offset + sizeof(glm::vec4)));
+            ofLogVerbose("AttributeCreator") << "(linux- offsets are inverted?) attrib mat4 locaton: " << location << " components: " << 4 << "  stride: " << stride << " offset: " << stride - (offset + sizeof(glm::vec4));
+#else
             mesh.getVbo().setAttributeBuffer(location, buffer, 4, stride, offset);
+            ofLogVerbose("AttributeCreator") << "attrib mat4 locaton: " << location << " components: " << 4 << "  stride: " << stride << " offset: " << offset;
+#endif
             mesh.getVbo().setAttributeDivisor(location, 1);
             ++location;
             offset += sizeof(glm::vec4);
@@ -84,42 +101,57 @@ namespace mediasystem {
         
         using GPURep = typename std::conditional<sizeof...(GPUTypes) == 1, typename std::tuple_element<0, std::tuple<GPUTypes...>>::type, std::tuple<GPUTypes...>>::type;
         
+        static_assert( sizeof(GPURep) == sizeof(std::tuple<GPUTypes...>), "Ensuring sizes are equal" );
+        
         static_assert(has_member_function_signiture_populate<InstanceType,void(GPUTypes&...)>(), "InstanceType must have member with signiture `void populate(GPUTypes...&)`");
         static_assert(has_member_function_signiture_prepareShader<UniformData,void(ofShaderSettings&)>(), "UniformData must have member `void UniformData::prepareShader(ofShaderSettings&)`");
         static_assert(has_member_function_signiture_bind<UniformData,void(ofShader&)>(), "UniformData must have member `void UniformData::bind(ofShader&)`");
         static_assert(has_member_function_signiture_unbind<UniformData,void(ofShader&)>(), "UniformData must have member `void UniformData::unbind(ofShader&)`");
 
-        InstancedDrawable(Scene& scene, UniformData uniforms, ofMesh baseMesh):mUniformData(std::move(uniforms)), mMesh(std::move(baseMesh)){
+        InstancedDrawable(Scene& scene, UniformData uniforms, ofMesh baseMesh, size_t initialSize = 0):
+            mMesh(std::move(baseMesh)),
+            mUniformData(std::move(uniforms))
+        {
             ofShaderSettings settings;
             mUniformData.prepareShader(settings);
             mShader.setup(settings);
             mInstances = scene.getComponents<InstanceType>();
+            if(initialSize > 0){
+                resize(initialSize);
+            }
         }
         
-        InstancedDrawable(Scene& scene, ofMesh baseMesh):mUniformData(), mMesh(std::move(baseMesh)){
+        InstancedDrawable(Scene& scene, ofMesh baseMesh, size_t initialSize = 0):mMesh(std::move(baseMesh)){
             ofShaderSettings settings;
             mUniformData.prepareShader(settings);
             mShader.setup(settings);
             mInstances = scene.getComponents<InstanceType>();
+            if(initialSize > 0){
+                resize(initialSize);
+            }
+        }
+        
+        void resize(size_t size){
+            mLocalBuffer.resize(size);
+            mGpuBuffer.allocate(sizeof(GPURep) * mLocalBuffer.size(), GL_STREAM_DRAW);
+            auto dummy = std::tuple<GPUTypes...>(); //force a tuple even if there's just one type to use the attribute createor
+            for_each_in_tuple(dummy, AttributeCreator(mGpuBuffer, mMesh, 5, sizeof(GPURep)));
         }
         
         void draw(){
             auto iter = mInstances.iter();
-            if(mInstances.size() != mLocalBuffer.size()){
-                mLocalBuffer.resize(mInstances.size());
-                mGpuBuffer.allocate(sizeof(GPURep) * mLocalBuffer.size(), GL_DYNAMIC_DRAW);
-                auto dummy = std::tuple<GPUTypes...>(); //force a tuple even if there's just one type to use the attribute createor
-                for_each_in_tuple(dummy, AttributeCreator(mGpuBuffer, mMesh, 5, sizeof(GPURep)));
+            if(mInstances.size() > mLocalBuffer.size()){
+                resize(mInstances.size());
             }
             auto dataPtr = mLocalBuffer.begin();
             while(auto it = iter.next()){
                 callPopulate(*it, *dataPtr++, gen_seq<sizeof...(GPUTypes)>(), BoolType<(is_greater<sizeof...(GPUTypes),1>())>());
             }
-            mGpuBuffer.updateData(sizeof(GPURep) * mLocalBuffer.size(), mLocalBuffer.data());
+            mGpuBuffer.updateData(sizeof(GPURep) * mInstances.size(), mLocalBuffer.data());
             
             mShader.begin();
             mUniformData.bind(mShader);
-            mMesh.drawInstanced(OF_MESH_FILL, mLocalBuffer.size());
+            mMesh.drawInstanced(OF_MESH_FILL, mInstances.size());
             mUniformData.unbind(mShader);
             mShader.end();
         }

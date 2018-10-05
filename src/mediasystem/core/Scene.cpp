@@ -41,8 +41,7 @@ namespace mediasystem {
         auto found = mEntities.find(id);
         if(found != mEntities.end()){
             mDestroyedEntities.push_back(id);
-            triggerEvent<DestroyEntity>(found->second);
-            found->second->clearComponents();
+            //found->second->clearComponents();
             return true;
         }
         return false;
@@ -52,6 +51,9 @@ namespace mediasystem {
     {
         for(size_t i = 0; i < mDestroyedEntities.size(); i++){
             auto entId = mDestroyedEntities.front();
+            auto ent = mEntities[entId];
+            triggerEvent<DestroyEntity>(ent);
+            ent->clearComponents();
             mEntities.erase(entId);
             mDestroyedEntities.pop_front();
         }
