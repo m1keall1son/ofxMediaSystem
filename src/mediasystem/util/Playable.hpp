@@ -411,7 +411,8 @@ namespace mediasystem {
         virtual bool isLooping()const { return mState.isLooping(); }
         virtual bool isPalindrome()const { return mState.isPalindrome(); }
         virtual bool isFinished()const { return mState.isFinished(); }
-        
+        virtual bool isWaitingOnDelay() const { return mWaitingOnDelay; }
+
         virtual void setLoop(bool flag = true) { mState.setLoop(flag); }
         virtual void setReverse(bool flag = true) { mState.setReverse(flag); }
         virtual void setPalindrome(bool flag = true) { mState.setPalindrome(flag); }

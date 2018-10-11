@@ -12,25 +12,17 @@
 #include "mediasystem/util/TypeID.hpp"
 #include "../util/Log.h"
 #include "../memory/Memory.h"
+#include "Handle.h"
 
 namespace mediasystem {
     
-    template<typename T, typename U>
-    std::weak_ptr<T> convertHandle( const std::weak_ptr<U>& generic ){
-        if(auto locked = generic.lock()){
-            return std::static_pointer_cast<T>(locked);
-        }
-        return std::weak_ptr<T>();
-    }
-    
-    //todo system manager doesn't make much sense, shuold it return handles instead of shared ptrs?
     class SystemManager {
     public:
         
         template<typename SystemType, typename...Args>
-        std::shared_ptr<SystemType> createSystem(Args&&...args){
-            auto shared = std::make_shared<SystemType>(std::forward<Args>(args)...);
-            auto generic = std::static_pointer_cast<void>(shared);
+        StrongHandle<SystemType> createSystem(Args&&...args){
+            auto shared = makeStrongHandle<SystemType>(std::forward<Args>(args)...);
+            auto generic = staticCast<void>(shared);
             auto it = mSystems.emplace(type_id<SystemType>,std::move(generic));
             if(it.second){
                 return shared;
@@ -41,10 +33,10 @@ namespace mediasystem {
         }
         
         template<typename SystemType>
-        std::shared_ptr<SystemType> getSystem(){
+        StrongHandle<SystemType> getSystem(){
             auto found = mSystems.find(type_id<SystemType>);
             if(found != mSystems.end()){
-                auto shared = std::static_pointer_cast<SystemType>(found->second);
+                auto shared = staticCast<SystemType>(found->second);
                 return std::move(shared);
             }else{
                 MS_LOG_ERROR("SystemManager: DOES NOT HAVE SYSTEM");
@@ -69,15 +61,15 @@ namespace mediasystem {
         }
         
     private:
-        std::map<type_id_t, std::shared_ptr<void>> mSystems;
+        std::map<type_id_t, StrongHandle<void>> mSystems;
     };
     
     namespace detail {
-        using GenericHandle = std::shared_ptr<void>;
-        using GenericHandleAllocator = DynamicAllocator<std::pair<const size_t, GenericHandle>>;
+        using GenericStrongHandle = StrongHandle<void>;
+        using GenericStrongHandleAllocator = DynamicAllocator<std::pair<const size_t, GenericStrongHandle>>;
     }
     
-    using GenericComponentMap = std::map<size_t, detail::GenericHandle, std::less<size_t>, detail::GenericHandleAllocator>;
+    using GenericComponentMap = std::map<size_t, detail::GenericStrongHandle, std::less<size_t>, detail::GenericStrongHandleAllocator>;
     
     //adapter class
     template<typename ComponentType>
@@ -88,10 +80,10 @@ namespace mediasystem {
         
         class iterator {
         public:
-            std::shared_ptr<ComponentType> next(){
+            StrongHandle<ComponentType> next(){
                 if(mIt == mEnd)
                     return nullptr;
-                return std::static_pointer_cast<ComponentType>((*mIt++).second);
+                return staticCast<ComponentType>((*mIt++).second);
             }
         private:
             iterator() = default;
@@ -115,10 +107,9 @@ namespace mediasystem {
     public:
             
         template<typename ComponentType, typename...Args>
-        std::weak_ptr<ComponentType> create(size_t entity_id, Args&&...args){
-            using ComponentAllocator = Allocator<ComponentType, PoolAllocator<ComponentType,BlockListStorage,1024>>; //1MB blocks
-            auto shared = std::allocate_shared<ComponentType>(ComponentAllocator(), std::forward<Args>(args)...);
-            auto generic = std::static_pointer_cast<void>(shared);
+        Handle<ComponentType> create(size_t entity_id, Args&&...args){
+            auto shared = allocateStrongHandle<ComponentType>(DynamicAllocator<ComponentType>(), std::forward<Args>(args)...);
+            auto generic = staticCast<void>(shared);
             auto found = mComponents.find(type_id<ComponentType>);
             if(found != mComponents.end()){
                 auto it = found->second.emplace( entity_id, std::move(generic) );
@@ -126,44 +117,44 @@ namespace mediasystem {
                     return shared;
                 }else{
                     MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " COULD NOT CREATE COMPONENT");
-                    return std::weak_ptr<ComponentType>();
+                    return Handle<ComponentType>();
                 }
             }else{
-                auto it = mComponents.emplace(type_id<ComponentType>, GenericComponentMap(detail::GenericHandleAllocator()));
+                auto it = mComponents.emplace(type_id<ComponentType>, GenericComponentMap(detail::GenericStrongHandleAllocator()));
                 if(it.second){
                     auto res = it.first->second.emplace(entity_id, std::move(generic));
                     if(res.second){
                         return shared;
                     }else{
                         MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " COULD NOT CREATE COMPONENT");
-                        return std::weak_ptr<ComponentType>();
+                        return Handle<ComponentType>();
                     }
                 }else{
                     MS_LOG_ERROR("ComponentManager: COULD NOT CREATE GENERIC COMPONENT MAP FOR COMPONENT TYPE");
-                    return std::weak_ptr<ComponentType>();
+                    return Handle<ComponentType>();
                 }
             }
         }
         
         template<typename ComponentType>
-        std::weak_ptr<ComponentType> retrieve(size_t entity_id){
+        Handle<ComponentType> retrieve(size_t entity_id){
             auto found = mComponents[type_id<ComponentType>].find(entity_id);
             if(found != mComponents[type_id<ComponentType>].end()){
-                auto cast = std::static_pointer_cast<ComponentType>(found->second);
+                auto cast = staticCast<ComponentType>(found->second);
                 return cast;
             }else{
                 MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
-                return std::weak_ptr<ComponentType>();
+                return Handle<ComponentType>();
             }
         }
         
-        std::weak_ptr<void> retrieve(type_id_t type, size_t entity_id){
+        Handle<void> retrieve(type_id_t type, size_t entity_id){
             auto found = mComponents[type].find(entity_id);
             if(found != mComponents[type].end()){
                 return found->second;
             }else{
                 MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
-                return std::weak_ptr<void>();
+                return Handle<void>();
             }
         }
         

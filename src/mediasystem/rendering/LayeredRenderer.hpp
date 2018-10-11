@@ -63,10 +63,10 @@ private:
 };
     
 template<typename T>
-using DrawableHandle = std::weak_ptr<Drawable<T>>;
+using DrawableHandle = Handle<Drawable<T>>;
 
 template<typename T>
-using DrawableHandleList = std::list<DrawableHandle<T>,DynamicAllocator<DrawableHandle<T>,512>>; // 1/2 KB block size
+using DrawableHandleList = std::list<DrawableHandle<T>,DynamicAllocator<DrawableHandle<T>>>; // 4 KB block size
 
 template<typename...DrawableTypes>
 class LayeredRenderer {

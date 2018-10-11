@@ -44,9 +44,9 @@ namespace mediasystem {
         }
     }
     
-    std::shared_ptr<Scene> SceneManager::createScene(const std::string& name, int eventDequeuTimeLimit)
+    StrongHandle<Scene> SceneManager::createScene(const std::string& name, int eventDequeuTimeLimit)
     {
-        auto scene = std::make_shared<Scene>(name, eventDequeuTimeLimit);
+        auto scene = makeStrongHandle<Scene>(name, eventDequeuTimeLimit);
         addScene(scene);
         return scene;
     }
@@ -62,13 +62,13 @@ namespace mediasystem {
         }
     }
     
-    void SceneManager::changeSceneTo(std::shared_ptr<Scene> scene)
+    void SceneManager::changeSceneTo(StrongHandle<Scene> scene)
     {
         mNextScene = scene;
         transition();
     }
     
-    void SceneManager::addScene(std::shared_ptr<Scene> scene)
+    void SceneManager::addScene(StrongHandle<Scene> scene)
     {
         scene->addDelegate<SceneChange>(EventDelegate::create<SceneManager, &SceneManager::onChangeScene>(this));
         mScenes.emplace_back(std::move(scene));
@@ -108,7 +108,7 @@ namespace mediasystem {
         }
     }
     
-    std::shared_ptr<Scene> SceneManager::getScene(const std::string& name) const
+    StrongHandle<Scene> SceneManager::getScene(const std::string& name) const
     {
         for (size_t i = 0; i < mScenes.size(); i++ ) {
             auto scene = mScenes[i];
@@ -128,7 +128,7 @@ namespace mediasystem {
         
         MS_LOG_VERBOSE("Received a scene change request...");
         
-        auto cast = std::static_pointer_cast<SceneChange>(sceneChange);
+        auto cast = staticCast<SceneChange>(sceneChange);
         mNextScene = cast->getNextScene();
         if(mNextScene){
             transition();
@@ -195,7 +195,7 @@ namespace mediasystem {
         }
     }
     
-    void SceneManager::destroyScene(const std::shared_ptr<Scene>& scene)
+    void SceneManager::destroyScene(const StrongHandle<Scene>& scene)
     {
         auto found = std::find(mScenes.begin(), mScenes.end(), scene);
         if(found != mScenes.end()){

@@ -43,6 +43,9 @@ public:
     FixedSizeStorage() :
     mObjects(::operator new(BLOCK_SIZE))
     {
+        std::cout << "new block of size: " << BLOCK_SIZE << std::endl;
+        std::cout << "object size: " << OBJECT_SIZE << std::endl;
+        std::cout << "allowed num objects per block: " << OBJECTS_PER_BLOCK << std::endl;
         std::memset(mObjects, 0, BLOCK_SIZE);
     }
     
@@ -80,9 +83,11 @@ public:
     void* operator[](size_t index) override {
         size_t block = floor(index / OBJECTS_PER_BLOCK);
         if(block == mBlocks.size()){
+            std::cout << "exceeded block count, create a new one" << std::endl;
             mBlocks.emplace_back();
         }else if(block > mBlocks.size()){
             for(size_t i = 0; i < (block - mBlocks.size()); i++ ){
+                std::cout << "catching up..." << std::endl;
                 mBlocks.emplace_back();
             }
         }

@@ -5,7 +5,7 @@
 #include "LockingQueue.hpp"
 #include "TupleHelpers.hpp"
 #include "EstimatedMovingAverage.hpp"
-#include "GlslDefine.h"
+#include "GL.h"
 #include "TypeID.hpp"
 #include "BasicTimer.hpp"
 #include "Profiler.hpp"

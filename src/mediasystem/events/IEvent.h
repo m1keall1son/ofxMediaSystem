@@ -15,6 +15,7 @@ namespace mediasystem {
     using IEventRef = std::shared_ptr<struct IEvent>;
     
     struct IEvent {
+        virtual ~IEvent() = default;
         virtual type_id_t getType() const = 0;
     };
     

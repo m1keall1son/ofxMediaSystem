@@ -90,16 +90,14 @@ namespace mediasystem {
             std::shared_ptr<BinableType> mMaterial;
         };
         
-        constexpr size_t MATERIAL_ALLOCATION_BLOCK_SIZE = 64;
-
         template<typename T>
-        using MaterialAllocator = DynamicAllocator<detail::Material<T>, MATERIAL_ALLOCATION_BLOCK_SIZE>;
+        using MaterialAllocator = DynamicAllocator<detail::Material<T>>;
         
         template<typename T>
-        using MaterialProxyAllocator = DynamicAllocator<detail::MaterialProxy<T>, MATERIAL_ALLOCATION_BLOCK_SIZE>;
+        using MaterialProxyAllocator = DynamicAllocator<detail::MaterialProxy<T>>;
         
         template<typename T>
-        using MaterialProxyWeakAllocator = DynamicAllocator<detail::MaterialProxyWeak<T>, MATERIAL_ALLOCATION_BLOCK_SIZE>;
+        using MaterialProxyWeakAllocator = DynamicAllocator<detail::MaterialProxyWeak<T>>;
         
     }//end namespace detail
         

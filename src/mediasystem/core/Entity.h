@@ -11,12 +11,14 @@
 #include <numeric>
 #include "mediasystem/util/TypeID.hpp"
 #include "Scene.h"
+#include "Handle.h"
 
 namespace mediasystem {
     
     class Entity;
-    using EntityRef = std::shared_ptr<Entity>;
-    using EntityHandle = std::weak_ptr<Entity>;
+    using EntityStrongHandle = StrongHandle<Entity>;
+    using EntityHandle = Handle<Entity>;
+    using EntityHandleList = std::list<EntityHandle, DynamicAllocator<EntityHandle>>;
     
     struct EntityGraph {
         EntityGraph(Entity& me);
@@ -24,13 +26,41 @@ namespace mediasystem {
         
         Entity& self;
         EntityHandle parent;
-        std::list<EntityHandle> children;
+        EntityHandleList children;
         
         void setParent(EntityHandle p, bool keepGlobalPosition = true);
         void clearParent(bool keepGlobalPosition = true);
         void addChild(EntityHandle child, bool keepGlobalPosition = true);
         void removeChild(EntityHandle child, bool keepGlobalPosition = true);
         
+    };
+    
+    class GraphComponent {
+    public:
+        
+        GraphComponent(EntityHandle self);
+        ~GraphComponent();
+        
+        void setParent(EntityHandle p, bool keepGlobalPosition = true);
+        void removeFromParent(bool keepGlobalPosition = true);
+        void addChild(EntityHandle child, bool keepGlobalPosition = true);
+        void removeChild(EntityHandle child, bool keepGlobalPosition = true);
+        std::vector<EntityHandle> getChildren();
+        std::vector<EntityHandle> filterChildren( const std::function<bool(Entity&)>& predicate );
+        EntityHandle firstChild( const std::function<bool(Entity&)>& predicate );
+
+    private:
+        
+        EntityHandle findSiblingHead();
+        EntityHandle findSiblingTail();
+
+        void removeFromSiblings();
+        
+        EntityHandle mSelf;
+        EntityHandle mParent;
+        EntityHandle mPrevSibling;
+        EntityHandle mNextSibling;
+        EntityHandle mChildHead;
     };
     
     class Entity {
@@ -53,7 +83,7 @@ namespace mediasystem {
         //convenience functions for working with components
         
         template<typename Component, typename...Args>
-        std::weak_ptr<Component> createComponent(Args&&...args){
+        Handle<Component> createComponent(Args&&...args){
             
             auto compId = getId<Component>();
             
@@ -89,12 +119,12 @@ namespace mediasystem {
         }
         
         template<typename Component>
-        std::shared_ptr<Component> getComponent() const{
+        StrongHandle<Component> getComponent() const{
             return mScene.getComponent<Component>(mId).lock();
         }
         
         template<typename Component>
-        std::weak_ptr<Component> getComponentHandle() const{
+        Handle<Component> getComponentHandle() const{
             return mScene.getComponent<Component>(mId);
         }
         
@@ -104,7 +134,7 @@ namespace mediasystem {
         void clearParent(bool bMaintainGlobalTransform = false);
         void addChild(EntityHandle child);
         void removeChild(EntityHandle child);
-        std::list<EntityHandle>& getChildren();
+        EntityHandleList& getChildren();
 
         //node component pass through
         void setPosition(float px, float py, float pz);

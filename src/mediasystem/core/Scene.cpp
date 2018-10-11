@@ -24,7 +24,7 @@ namespace mediasystem {
     EntityHandle Scene::createEntity()
     {
         auto next = sNextEntityId++;
-        auto it = mEntities.emplace(next, std::allocate_shared<Entity>(DynamicAllocator<Entity>(), *this, next));
+        auto it = mEntities.emplace(next, allocateStrongHandle<Entity>(DynamicAllocator<Entity>(), *this, next));
         if(it.second){
             queueEvent<NewEntity>(it.first->second);
             //everyone gets a node component, because why not
@@ -81,7 +81,7 @@ namespace mediasystem {
         return mComponentManager.destroy(type, entity_id);
     }
     
-    std::weak_ptr<void> Scene::getComponent(type_id_t type, size_t entity_id)
+    Handle<void> Scene::getComponent(type_id_t type, size_t entity_id)
     {
         return mComponentManager.retrieve(type, entity_id);
     }

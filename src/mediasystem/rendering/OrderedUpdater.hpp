@@ -41,10 +41,10 @@ namespace mediasystem {
     };
     
     template<typename T>
-    using UpdateableHandle = std::weak_ptr<Updateable<T>>;
+    using UpdateableHandle = Handle<Updateable<T>>;
     
     template<typename T>
-    using UpdateableHandleList = std::list<UpdateableHandle<T>,DynamicAllocator<UpdateableHandle<T>,512>>; // 1/2 KB block size
+    using UpdateableHandleList = std::list<UpdateableHandle<T>,DynamicAllocator<UpdateableHandle<T>>>;
     
     template<typename...UpdateableTypes>
     class OrderedUpdater {

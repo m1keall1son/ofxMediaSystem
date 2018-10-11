@@ -6,13 +6,14 @@
 #include "mediasystem/core/ComponentSystem.hpp"
 #include "mediasystem/events/SceneEvents.h"
 #include "mediasystem/util/StateMachine.h"
+#include "mediasystem/core/Handle.h"
 
 namespace mediasystem {
     
     class Entity;
     
-    using EntityRef = std::shared_ptr<Entity>;
-    using EntityHandle = std::weak_ptr<Entity>;
+    using EntityStrongHandle = StrongHandle<Entity>;
+    using EntityHandle = Handle<Entity>;
     
     class Scene : public EventManager {
 	public:
@@ -51,13 +52,13 @@ namespace mediasystem {
         virtual EntityHandle getEntity(size_t id);
 
         template<typename SystemType, typename...Args>
-        std::shared_ptr<SystemType> createSystem(Args&&...args)
+        StrongHandle<SystemType> createSystem(Args&&...args)
         {
             return mSystemManager.createSystem<SystemType>(std::forward<Args>(args)...);
         }
         
         template<typename SystemType>
-        std::shared_ptr<SystemType> getSystem()
+        StrongHandle<SystemType> getSystem()
         {
             return mSystemManager.getSystem<SystemType>();
         }
@@ -69,7 +70,7 @@ namespace mediasystem {
         }
         
         template<typename Component, typename...Args>
-        std::weak_ptr<Component> createComponent(size_t entity_id, Args&&...args){
+        Handle<Component> createComponent(size_t entity_id, Args&&...args){
             auto ret = mComponentManager.create<Component>(entity_id, std::forward<Args>(args)...);
             queueEvent<NewComponent<Component>>(getEntity(entity_id), ret);
             return ret;
@@ -90,7 +91,7 @@ namespace mediasystem {
             return mComponentManager.getComponents<ComponentType>();
         }
         
-        virtual std::weak_ptr<void> getComponent(type_id_t type, size_t entity_id);
+        virtual Handle<void> getComponent(type_id_t type, size_t entity_id);
         virtual bool destroyComponent(type_id_t type, size_t entity_id);
 
         inline bool hasStarted() const { return mHasStarted; }
@@ -129,7 +130,7 @@ namespace mediasystem {
         inline const std::string& getPreviousSceneName() const { return mPreviousScene; }
         
 		std::string	mName;
-        std::map<size_t, EntityRef, std::less<size_t>, DynamicAllocator<std::pair<const size_t, EntityRef>>> mEntities;
+        std::map<size_t, EntityStrongHandle, std::less<size_t>, DynamicAllocator<std::pair<const size_t, EntityStrongHandle>>> mEntities;
 
 	private:
         
