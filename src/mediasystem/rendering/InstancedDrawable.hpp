@@ -9,7 +9,6 @@
 
 #include "mediasystem/util/TupleHelpers.hpp"
 #include "mediasystem/util/MemberDetection.hpp"
-#include "mediasystem/core/ComponentSystem.hpp"
 #include "mediasystem/core/Scene.h"
 #include "ofMain.h"
 

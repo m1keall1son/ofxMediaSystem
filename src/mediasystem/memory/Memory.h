@@ -7,9 +7,10 @@
 
 #pragma once
 
-#include "Allocator.hpp"
-#include "HeapAllocator.hpp"
-#include "PoolAllocator.hpp"
-#include "DefaultInitializer.hpp"
 #include "MemoryConfig.h"
-
+#include "Allocator.hpp"
+#include "AllocationPolicy.hpp"
+#include "AllocationManager.hpp"
+#include "AllocationStrategies.hpp"
+#include "AllocationMiddleware.hpp"
+#include "Storage.hpp"

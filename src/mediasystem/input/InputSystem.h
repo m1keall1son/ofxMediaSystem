@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "mediasystem/core/ComponentSystem.hpp"
 #include "mediasystem/events/EventManager.h"
 #include "mediasystem/input/InputComponent.h"
 #include "mediasystem/input/ScreenBounds.hpp"
@@ -16,7 +15,7 @@ namespace mediasystem {
     
     class Scene;
     class InputComponent;
-    using InputComponentHandle = std::weak_ptr<InputComponent>;
+    using InputComponentHandle = Handle<InputComponent>;
 
     class InputSystem {
     public:

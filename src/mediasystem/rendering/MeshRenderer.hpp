@@ -9,6 +9,7 @@
 
 #include "ofMain.h"
 #include "mediasystem/memory/Memory.h"
+#include "mediasystem/core/Scene.h"
 
 namespace mediasystem {
     
@@ -90,36 +91,27 @@ namespace mediasystem {
             std::shared_ptr<BinableType> mMaterial;
         };
         
-        template<typename T>
-        using MaterialAllocator = DynamicAllocator<detail::Material<T>>;
-        
-        template<typename T>
-        using MaterialProxyAllocator = DynamicAllocator<detail::MaterialProxy<T>>;
-        
-        template<typename T>
-        using MaterialProxyWeakAllocator = DynamicAllocator<detail::MaterialProxyWeak<T>>;
-        
     }//end namespace detail
         
     class MeshRenderer {
     public:
         
         template<typename BindableType, typename...Args>
-        MeshRenderer(ofMesh mesh, Args&&...args):
+        MeshRenderer(Scene& scene, ofMesh mesh, Args&&...args):
             mMesh(std::move(mesh)),
-            mMaterial(std::allocate_shared<detail::Material<BindableType>>(detail::MaterialAllocator<BindableType>(), std::forward<Args>(args)...))
+            mMaterial(std::allocate_shared<detail::Material<BindableType>>(scene.getAllocator<detail::Material<BindableType>>(), std::forward<Args>(args)...))
         {}
         
         template<typename BindableType>
-        MeshRenderer(ofMesh mesh, std::shared_ptr<BindableType> material) :
+        MeshRenderer(Scene& scene, ofMesh mesh, std::shared_ptr<BindableType> material) :
         mMesh(std::move(mesh)),
-        mMaterial(std::allocate_shared<detail::MaterialProxy<BindableType>>(detail::MaterialProxyAllocator<BindableType>(), std::move(material)))
+        mMaterial(std::allocate_shared<detail::MaterialProxy<BindableType>>(scene.getAllocator<detail::MaterialProxy<BindableType>>(), std::move(material)))
         {}
         
         template<typename BindableType>
-        MeshRenderer(ofMesh mesh, std::weak_ptr<BindableType> material) :
+        MeshRenderer(Scene& scene, ofMesh mesh, std::weak_ptr<BindableType> material) :
             mMesh(std::move(mesh)),
-            mMaterial(std::allocate_shared<detail::MaterialProxyWeak<BindableType>>(detail::MaterialProxyWeakAllocator<BindableType>(), std::move(material)))
+            mMaterial(std::allocate_shared<detail::MaterialProxyWeak<BindableType>>(scene.getAllocator<detail::MaterialProxyWeak<BindableType>>(), std::move(material)))
         {}
         
         inline void draw()

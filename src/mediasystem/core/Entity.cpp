@@ -10,7 +10,7 @@
 
 namespace mediasystem {
     
-    EntityGraph::EntityGraph(Entity& me):self(me){}
+    EntityGraph::EntityGraph(Entity& me):self(me),children(me.getScene().getAllocator<EntityHandle>()){}
     EntityGraph::~EntityGraph()
     {
         children.clear();

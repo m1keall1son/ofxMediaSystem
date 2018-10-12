@@ -5,7 +5,6 @@
 #include <map>
 #include "mediasystem/events/EventManager.h"
 #include "mediasystem/events/SceneEvents.h"
-#include "mediasystem/core/ComponentSystem.hpp"
 #include "mediasystem/core/Scene.h"
 
 namespace mediasystem {
@@ -38,7 +37,7 @@ namespace mediasystem {
             return staticCast<SceneType>(mScenes.back());
         }
         
-        std::shared_ptr<Scene> createScene(const std::string& name, int eventDequeuTimeLimit = TimedQueue<IEventRef>::NO_TIME_LIMIT);
+        StrongHandle<Scene> createScene(const std::string& name, AllocationManager&& allocator = AllocationManager());
         
         void changeSceneTo(const std::string& scene);
         void changeSceneTo(StrongHandle<Scene> scene);

@@ -10,7 +10,6 @@
 #include <tuple>
 #include "ofMain.h"
 #include "mediasystem/core/Entity.h"
-#include "mediasystem/core/ComponentSystem.hpp"
 #include "mediasystem/rendering/IPresenter.h"
 #include "mediasystem/rendering/DefaultPresenter.h"
 #include "mediasystem/util/TupleHelpers.hpp"
@@ -44,7 +43,7 @@ namespace mediasystem {
     using UpdateableHandle = Handle<Updateable<T>>;
     
     template<typename T>
-    using UpdateableHandleList = std::list<UpdateableHandle<T>,DynamicAllocator<UpdateableHandle<T>>>;
+    using UpdateableHandleList = std::list<UpdateableHandle<T>,Allocator<UpdateableHandle<T>>>;
     
     template<typename...UpdateableTypes>
     class OrderedUpdater {
@@ -117,7 +116,7 @@ namespace mediasystem {
                 auto& list = get_element_by_type<UpdateableHandleList<T>>(found->second);
                 list.emplace_back(std::move(handle));
             }else{
-                OrderedList l;
+                OrderedList l{mScene.getAllocator<UpdateableHandleList<UpdateableTypes>>()...};
                 auto& list = get_element_by_type<UpdateableHandleList<T>>(l);
                 list.emplace_back(std::move(handle));
                 mOrderedLists.emplace(order, std::move(l));

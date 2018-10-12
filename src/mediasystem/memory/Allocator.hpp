@@ -8,92 +8,132 @@
 
 #pragma once
 
-#include "DefaultInitializer.hpp"
 #include "AllocatorTraits.hpp"
-#include "HeapAllocator.hpp"
-
-#define FORWARD_ALLOCATOR_TRAITS(C)                  \
-typedef typename C::value_type      value_type;      \
-typedef typename C::pointer         pointer;         \
-typedef typename C::const_pointer   const_pointer;   \
-typedef typename C::reference       reference;       \
-typedef typename C::const_reference const_reference; \
-typedef typename C::size_type       size_type;       \
-typedef typename C::difference_type difference_type; \
+#include "AllocationManager.hpp"
 
 namespace mediasystem {
-
-template<typename T,
-	typename AllocationPolicy = HeapAllocator<T>,
-	typename InitializationPolicy = DefaultInitializer<T> >
-class Allocator : public AllocationPolicy, public InitializationPolicy
-{
-public:
-	
-	// Template parameters
-	typedef AllocationPolicy Policy;
-    typedef InitializationPolicy Initailization;
-	
-	FORWARD_ALLOCATOR_TRAITS(Policy)
-	
-	template<typename U>
-	struct rebind
-	{
-		typedef Allocator<U,
-		typename Policy::template rebind<U>::other,
-		typename Initailization::template rebind<U>::other
-		> other;
-	};
-	
-	template<typename...Args>
-	Allocator(Args&&...args) : Policy(std::forward<Args>(args)...), Initailization(std::forward<Args>(args)...) {}
-	
-	// Copy Constructor
-	template<typename U,
-	typename AllocationPolicyU,
-	typename InitializationAllocationPolicyU>
-	Allocator(Allocator<U,
-			  AllocationPolicyU,
-			  InitializationAllocationPolicyU> const& other) :
-	Policy(other),
-	Initailization(other)
-	{}
-};
+    
+    template<typename T>
+    class _Allocator {
+    public:
+        ALLOCATOR_TRAITS(T);
+        
+        explicit _Allocator(AllocationManager* manager = nullptr):mManager(manager){
+            if(mManager){
+                auto policy = mManager->getPolicy<T>();
+                if(!policy){
+                    mManager->addPolicy<T>(AllocationPolicyFormat(), false);
+                }
+            }
+        }
+        
+        template<typename U>
+        struct rebind
+        {
+            typedef _Allocator<U> other;
+        };
+        
+        template<typename U>
+        _Allocator(_Allocator<U> const& other) :
+            mManager(other.mManager)
+        {
+            if(!mManager)
+                throw std::bad_alloc();
+            
+            if(auto mypolicy = mManager->getPolicy<T>()){
+                return;
+            }else{
+                if(auto policy = mManager->getPolicy<U>()){
+                    std::cout << "constructing T - size: " << sizeof(T) <<" type: " << typeid(T).name() << "\n";
+                    std::cout << "from U - size: " << sizeof(U) <<" type: " << typeid(U).name() << std::endl;
+                    std::cout << "with \n";
+                    std::cout << policy->getFormat();
+                    mManager->addPolicy<T>(policy->getFormat(), false);
+                }else{
+                    std::cout << "don't have policies for U type: " << typeid(U).name() << "\n";
+                    std::cout << "or T type: " << typeid(T).name() << std::endl;
+                    std::cout << "defaulting both to heap" << std::endl;
+                    mManager->addPolicy<T>( AllocationPolicyFormat(), false ); //default
+                    mManager->addPolicy<U>( AllocationPolicyFormat(), false ); //default
+                }
+            }
+            
+        }
+        
+        pointer allocate(size_type count = 1, const_pointer hint = 0)
+        {
+            if(!mManager)
+                throw std::bad_alloc();
+            auto policy = mManager->getPolicy<T>();
+            return static_cast<pointer>(policy->allocate(count));
+        }
+        
+        void deallocate(pointer ptr, size_type count = 1)
+        {
+            if(!mManager)
+                throw std::bad_alloc();
+            auto policy = mManager->getPolicy<T>();
+            policy->deallocate(ptr, count);
+        }
+        
+        //These don't work on all platforms
+        type*       address(type&       obj) const {return &obj;}
+        type const* address(type const& obj) const {return &obj;}
+        
+        template<typename...Args>
+        void construct(type* ptr, Args&&...args)
+        {
+            new(ptr) type(args...);
+        }
+        
+        void destroy(type* ptr)
+        {
+            ptr->~type();
+        }
+        
+        AllocationManager* mManager;
+    };
     
 }//end namespace mediasystem
 
 // Two allocators are not equal unless a specialization says so
-template<typename T, typename AllocationPolicy, typename InitializationPolicy,
-typename U, typename AllocationPolicyU, typename InitializationAllocationPolicyU>
-bool operator==(mediasystem::Allocator<T, AllocationPolicy, InitializationPolicy> const& left,
-                mediasystem::Allocator<U, AllocationPolicyU, InitializationAllocationPolicyU> const& right)
+template<typename T>
+bool operator==(mediasystem::_Allocator<T> const& left, mediasystem::_Allocator<T> const& right)
+{
+    return left.mManager == right.mManager;
+}
+
+// Two allocators are not equal unless a specialization says so
+template<typename T>
+bool operator!=(mediasystem::_Allocator<T> const& left, mediasystem::_Allocator<T> const& right)
+{
+    return !(left == right);
+}
+
+// Two allocators are not equal unless a specialization says so
+template<typename T,typename U>
+bool operator==(mediasystem::_Allocator<T> const& left, mediasystem::_Allocator<U> const& right)
 {
 	return false;
 }
 
 // Also implement inequality
-template<typename T, typename AllocationPolicy, typename InitializationPolicy,
-typename U, typename AllocationPolicyU, typename InitializationAllocationPolicyU>
-bool operator!=(mediasystem::Allocator<T, AllocationPolicy, InitializationPolicy> const& left,
-				mediasystem::Allocator<U, AllocationPolicyU, InitializationAllocationPolicyU> const& right)
+template<typename T, typename U>
+bool operator!=(mediasystem::_Allocator<T> const& left, mediasystem::_Allocator<U> const& right)
 {
 	return !(left == right);
 }
 
 // Comparing an allocator to anything else should not show equality
-template<typename T, typename AllocationPolicy, typename InitializationPolicy,
-typename OtherAllocator>
-bool operator==(mediasystem::Allocator<T, AllocationPolicy, InitializationPolicy> const& left,
-				OtherAllocator const& right)
+template<typename T, typename OtherAllocator>
+bool operator==(mediasystem::_Allocator<T> const& left, OtherAllocator const& right)
 {
 	return false;
 }
 
 // Also implement inequality
-template<typename T, typename AllocationPolicy, typename InitializationPolicy,
-typename OtherAllocator>
-bool operator!=(mediasystem::Allocator<T, AllocationPolicy, InitializationPolicy> const& left,
-				OtherAllocator const& right)
+template<typename T, typename OtherAllocator>
+bool operator!=(mediasystem::_Allocator<T> const& left, OtherAllocator const& right)
 {
 	return !(left == right);
 }

@@ -18,7 +18,7 @@ namespace mediasystem {
     class Entity;
     using EntityStrongHandle = StrongHandle<Entity>;
     using EntityHandle = Handle<Entity>;
-    using EntityHandleList = std::list<EntityHandle, DynamicAllocator<EntityHandle>>;
+    using EntityHandleList = std::list<EntityHandle, Allocator<EntityHandle>>;
     
     struct EntityGraph {
         EntityGraph(Entity& me);

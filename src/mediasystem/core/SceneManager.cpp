@@ -44,9 +44,9 @@ namespace mediasystem {
         }
     }
     
-    StrongHandle<Scene> SceneManager::createScene(const std::string& name, int eventDequeuTimeLimit)
+    StrongHandle<Scene> SceneManager::createScene(const std::string& name, AllocationManager&& allocator)
     {
-        auto scene = makeStrongHandle<Scene>(name, eventDequeuTimeLimit);
+        auto scene = makeStrongHandle<Scene>(name, std::move(allocator));
         addScene(scene);
         return scene;
     }
