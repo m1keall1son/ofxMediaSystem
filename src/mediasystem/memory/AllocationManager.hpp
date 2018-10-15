@@ -28,14 +28,31 @@ namespace mediasystem {
         }
         
         template<typename T>
-        IAllocationPolicy* addPolicy(const AllocationPolicyFormat& fmt = AllocationPolicyFormat(), bool force = true){
-            
+        IAllocationPolicy* setPolicy(const AllocationPolicyFormat& fmt = AllocationPolicyFormat()){
+            auto policy = createAllocationPolicy<T>(fmt);
+            auto ret = policy.get();
             auto found = mAllocaitonPolicies.find(type_id<T>);
             if( found != mAllocaitonPolicies.end()){
-                if(!force)
-                    return found->second.get();
+                found->second = std::move(policy);
+            }else{
+                mAllocaitonPolicies.emplace(type_id<T>, std::move(policy));
             }
-            
+            return ret;
+        }
+        
+        template<typename T>
+        IAllocationPolicy* trySetPolicy(const AllocationPolicyFormat& fmt = AllocationPolicyFormat()){
+            auto found = mAllocaitonPolicies.find(type_id<T>);
+            if( found != mAllocaitonPolicies.end()){
+                return found->second.get();
+            }
+            return setPolicy<T>(fmt);
+        }
+        
+    private:
+        
+        template<typename T>
+        std::unique_ptr<IAllocationPolicy> createAllocationPolicy( const AllocationPolicyFormat& fmt) {
             std::unique_ptr<IAllocationPolicy> policy;
             
             switch(fmt.strategy){
@@ -69,18 +86,9 @@ namespace mediasystem {
                 }
             }
 #endif
-            auto ret = policy.get();
-            if( found != mAllocaitonPolicies.end()){
-                if(force){
-                    found->second = std::move(policy);
-                }
-            }else{
-                mAllocaitonPolicies.emplace(type_id<T>, std::move(policy));
-            }
-            return ret;
+            return std::move(policy);
         }
         
-    private:
         std::map<type_id_t, std::unique_ptr<IAllocationPolicy>> mAllocaitonPolicies;
         //todo, could include initializers if they worked...
     };

@@ -248,8 +248,8 @@ namespace mediasystem {
         virtual void play(){
             reset();
             mState.play();
-            if(mOnStartFn){
-                mOnStartFn();
+            if(mHandlersMap[ON_START_HANDLER]){
+                mHandlersMap[ON_START_HANDLER]();
             }
             if(mDelay > 0 && mDelayElapsed == 0){
                 mWaitingOnDelay = true;
@@ -260,8 +260,8 @@ namespace mediasystem {
         
         virtual void stop() {
             mState.stop();
-            if(mOnStopFn){
-                mOnStopFn();
+            if(mHandlersMap[ON_STOP_HANDLER]){
+                mHandlersMap[ON_STOP_HANDLER]();
             }
         }
         
@@ -292,12 +292,12 @@ namespace mediasystem {
             mKeyFrames = std::move(options.getKeyFrames());
             mDelay = options.mDelay;
             mSpeed = options.mSpeed;
-            mOnStartFn = std::move(options.mOnStartFn);
-            mOnStartAfterDelay = std::move(options.mOnStartAfterDelay);
-            mOnFinishFn = std::move(options.mOnFinishFn);
-            mOnUpdateFn = std::move(options.mOnUpdateFn);
-            mOnLoopedFn = std::move(options.mOnLoopedFn);
-            mOnStopFn = std::move(options.mOnStopFn);
+            mHandlersMap[ON_START_HANDLER] = std::move(options.mOnStartFn);
+            mHandlersMap[ON_DELAYED_START_HANDLER] = std::move(options.mOnStartAfterDelay);
+            mHandlersMap[ON_FINISH_HANDLER] = std::move(options.mOnFinishFn);
+            mHandlersMap[ON_UPDATE_HANDLER] = std::move(options.mOnUpdateFn);
+            mHandlersMap[ON_LOOPED_HANDLER] = std::move(options.mOnLoopedFn);
+            mHandlersMap[ON_STOP_HANDLER] = std::move(options.mOnStopFn);
             resetKeyFrames();
         }
         
@@ -311,13 +311,14 @@ namespace mediasystem {
         }
         
         virtual void step(T amount){
+            swapHandlers(); //swap out if neccessary
             if ((mState.isPlaying()) && !(mState.isPaused())) {
                 
                 //check delay
                 if(mDelayElapsed >= mDelay){
                     if(mWaitingOnDelay){
-                        if(mOnStartAfterDelay)
-                            mOnStartAfterDelay();
+                        if(mHandlersMap[ON_DELAYED_START_HANDLER])
+                            mHandlersMap[ON_DELAYED_START_HANDLER]();
                         mWaitingOnDelay = false;
                     }
                     
@@ -327,33 +328,33 @@ namespace mediasystem {
                     mState = State::advance(mState, amount * mSpeed);
                     if(mState.isFinished()){
                         stop();
-                        if(mOnFinishFn)
-                            mOnFinishFn();
+                        if(mHandlersMap[ON_FINISH_HANDLER])
+                            mHandlersMap[ON_FINISH_HANDLER]();
                         return;
                     }
                     
-                    if(mOnUpdateFn)
-                        mOnUpdateFn();
+                    if(mHandlersMap[ON_UPDATE_HANDLER])
+                        mHandlersMap[ON_UPDATE_HANDLER]();
                     
                     //check loop
                     if(mState.isLooping()){
                         if(mState.isPalindrome()){
                             if(mState.isReversed() != prevReverse){
-                                if(mOnLoopedFn)
-                                    mOnLoopedFn();
+                                if(mHandlersMap[ON_LOOPED_HANDLER])
+                                    mHandlersMap[ON_LOOPED_HANDLER]();
                                 resetKeyFrames();
                             }
                         }else{
                             if(mState.isReversed()){
                                 if(mState.currentPosition > prevPosition){
-                                    if(mOnLoopedFn)
-                                        mOnLoopedFn();
+                                    if(mHandlersMap[ON_LOOPED_HANDLER])
+                                        mHandlersMap[ON_LOOPED_HANDLER]();
                                     resetKeyFrames();
                                 }
                             }else{
                                 if(mState.currentPosition < prevPosition){
-                                    if(mOnLoopedFn)
-                                        mOnLoopedFn();
+                                    if(mHandlersMap[ON_LOOPED_HANDLER])
+                                        mHandlersMap[ON_LOOPED_HANDLER]();
                                     resetKeyFrames();
                                 }
                             }
@@ -424,15 +425,61 @@ namespace mediasystem {
         virtual void setPlaybackSpeed(T speed){ mSpeed = speed; }
         
         //only if there's a delay
-        virtual void setStartAfterDelayFn(std::function<void()> afterDelay){ mOnStartAfterDelay = std::move(afterDelay); }
+        virtual void setStartAfterDelayFn(std::function<void()> afterDelay){
+            std::pair<Handler,std::function<void()>> p = std::make_pair( ON_DELAYED_START_HANDLER, std::move(afterDelay) );
+            mUpdateHandlerQueue.emplace_back(std::move(p));
+        }
+        virtual void clearStartAfterDelayFn(){
+            std::pair<Handler,std::function<void()>> p = std::make_pair( ON_DELAYED_START_HANDLER, nullptr);
+            mUpdateHandlerQueue.emplace_back(std::move(p));
+        }
         
         //always immediatly on play()
-        virtual void setStartFn(std::function<void()> start){ mOnStartFn = std::move(start); }
-        virtual void setStopFn(std::function<void()> stop){ mOnStopFn = std::move(stop); }
-        virtual void setFinishFn(std::function<void()> finish){ mOnFinishFn = std::move(finish); }
-        virtual void setUpdateFn(std::function<void()> update){ mOnUpdateFn = std::move(update); }
+        virtual void setStartFn(std::function<void()> start){
+            std::pair<Handler,std::function<void()>> p = std::make_pair( ON_START_HANDLER, std::move(start) );
+            mUpdateHandlerQueue.emplace_back(std::move(p));
+        }
+        virtual void clearStartFn(){
+            std::pair<Handler,std::function<void()>> p = std::make_pair( ON_START_HANDLER, nullptr);
+            mUpdateHandlerQueue.emplace_back(std::move(p));
+        }
+        
+        virtual void setStopFn(std::function<void()> stop){
+            std::pair<Handler,std::function<void()>> p = std::make_pair( ON_STOP_HANDLER, std::move(stop) );
+            mUpdateHandlerQueue.emplace_back(std::move(p));
+        }
+        virtual void clearStopFn(){
+            std::pair<Handler,std::function<void()>> p = std::make_pair( ON_STOP_HANDLER, nullptr);
+            mUpdateHandlerQueue.emplace_back(std::move(p));
+        }
+        
+        virtual void setFinishFn(std::function<void()> finish){
+            std::pair<Handler,std::function<void()>> p = std::make_pair( ON_FINISH_HANDLER, std::move(finish) );
+            mUpdateHandlerQueue.emplace_back(std::move(p));
+        }
+        virtual void clearFinishFn(){
+            std::pair<Handler,std::function<void()>> p = std::make_pair( ON_FINISH_HANDLER, nullptr);
+            mUpdateHandlerQueue.emplace_back(std::move(p));
+        }
+        
+        virtual void setUpdateFn(std::function<void()> update){
+            std::pair<Handler,std::function<void()>> p = std::make_pair( ON_UPDATE_HANDLER, std::move(update) );
+            mUpdateHandlerQueue.emplace_back(std::move(p));
+        }
+        virtual void clearUpdateFn(){
+            std::pair<Handler,std::function<void()>> p = std::make_pair( ON_UPDATE_HANDLER, nullptr);
+            mUpdateHandlerQueue.emplace_back(std::move(p));
+        }
+        
         //triggers for regular loop and plaindrome
-        virtual void setLoopedFn(std::function<void()> looped){ mOnLoopedFn = std::move(looped); }
+        virtual void setLoopedFn(std::function<void()> looped){
+            std::pair<Handler,std::function<void()>> p = std::make_pair( ON_LOOPED_HANDLER, std::move(looped) );
+            mUpdateHandlerQueue.emplace_back(std::move(p));
+        }
+        virtual void clearLoopedFn(){
+            std::pair<Handler,std::function<void()>> p = std::make_pair( ON_LOOPED_HANDLER, nullptr);
+            mUpdateHandlerQueue.emplace_back(std::move(p));
+        }
         
         const State& getState()const{return mState;}
         float getPercentComplete() const { return getCurrentPosition()/(float)getDuration(); }
@@ -444,6 +491,22 @@ namespace mediasystem {
         T getPlaybackSpeed() const { return mSpeed; }
         
     protected:
+        
+        enum Handler {
+            ON_START_HANDLER,
+            ON_DELAYED_START_HANDLER,
+            ON_STOP_HANDLER,
+            ON_FINISH_HANDLER,
+            ON_UPDATE_HANDLER,
+            ON_LOOPED_HANDLER
+        };
+        
+        void swapHandlers(){
+            for(auto & update : mUpdateHandlerQueue){
+                std::swap(mHandlersMap[update.first], update.second);
+            }
+            mUpdateHandlerQueue.clear();
+        }
         
         void resetKeyFrames(){
             if(mState.isReversed() && mKeyFrames.size() > 1){
@@ -461,12 +524,9 @@ namespace mediasystem {
         State mState;
         std::list<KeyFrame> mKeyFrames;
         typename std::list<KeyFrame>::iterator mCurrentKeyFrame;
-        std::function<void()> mOnStartFn;
-        std::function<void()> mOnStopFn;
-        std::function<void()> mOnStartAfterDelay;
-        std::function<void()> mOnFinishFn;
-        std::function<void()> mOnUpdateFn;
-        std::function<void()> mOnLoopedFn;
+        //todo, think about the allocation strategy here?
+        std::map<Handler,std::function<void()>> mHandlersMap;
+        std::vector<std::pair<Handler,std::function<void()>>> mUpdateHandlerQueue;
     };
     
 }//end namespace mediasystem

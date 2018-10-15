@@ -135,6 +135,7 @@ namespace mediasystem {
         void addChild(EntityHandle child);
         void removeChild(EntityHandle child);
         EntityHandleList& getChildren();
+        void removeChildren(bool keepGlobalPosition = true);
 
         //node component pass through
         void setPosition(float px, float py, float pz);

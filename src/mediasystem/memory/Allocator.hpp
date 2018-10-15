@@ -7,7 +7,7 @@
 //
 
 #pragma once
-
+#include "ofMain.h"
 #include "AllocatorTraits.hpp"
 #include "AllocationManager.hpp"
 
@@ -22,7 +22,7 @@ namespace mediasystem {
             if(mManager){
                 auto policy = mManager->getPolicy<T>();
                 if(!policy){
-                    mManager->addPolicy<T>(AllocationPolicyFormat(), false);
+                    mManager->setPolicy<T>();
                 }
             }
         }
@@ -44,17 +44,19 @@ namespace mediasystem {
                 return;
             }else{
                 if(auto policy = mManager->getPolicy<U>()){
-                    std::cout << "constructing T - size: " << sizeof(T) <<" type: " << typeid(T).name() << "\n";
-                    std::cout << "from U - size: " << sizeof(U) <<" type: " << typeid(U).name() << std::endl;
-                    std::cout << "with \n";
-                    std::cout << policy->getFormat();
-                    mManager->addPolicy<T>(policy->getFormat(), false);
+                    std::stringstream fmtStream;
+                    fmtStream << policy->getFormat();
+                    ofLogVerbose("Memory") << "rebinding alloctor for type T [size: " << sizeof(T) <<" id: " << typeid(T).name() << "]\n"
+                    << "from type U [size: " << sizeof(U) <<" id: " << typeid(U).name() << "]\n"
+                    << "with"
+                    << fmtStream.str();
+                    mManager->trySetPolicy<T>(policy->getFormat());
                 }else{
-                    std::cout << "don't have policies for U type: " << typeid(U).name() << "\n";
-                    std::cout << "or T type: " << typeid(T).name() << std::endl;
-                    std::cout << "defaulting both to heap" << std::endl;
-                    mManager->addPolicy<T>( AllocationPolicyFormat(), false ); //default
-                    mManager->addPolicy<U>( AllocationPolicyFormat(), false ); //default
+                    ofLogVerbose("Memory") << "don't have policies for U [id: " << typeid(U).name() << "]\n"
+                    << "or T [id: " << typeid(T).name() << "]\n"
+                    << "defaulting both to heap";
+                    mManager->setPolicy<T>(); //default
+                    mManager->setPolicy<U>(); //default
                 }
             }
             

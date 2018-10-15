@@ -188,7 +188,7 @@ private:
                 auto& list = get_element_by_type<DrawableHandleList<T>>(foundOrder->second);
                 list.emplace_back(std::move(handle));
             }else{
-                TypesList l{mScene.getAllocator<DrawableHandleList<DrawableTypes>>()...};
+                TypesList l{DrawableHandleList<DrawableTypes>(mScene.getAllocator<DrawableHandle<T>>())...};
                 auto& list = get_element_by_type<DrawableHandleList<T>>(l);
                 list.emplace_back(std::move(handle));
                 found->layer.emplace(order, std::move(l));
@@ -205,7 +205,7 @@ private:
                 auto& list = get_element_by_type<DrawableHandleList<T>>(foundOrder->second);
                 list.emplace_back(std::move(handle));
             }else{
-                TypesList l{mScene.getAllocator<DrawableHandleList<DrawableTypes>>()...};
+                TypesList l{DrawableHandleList<DrawableTypes>(mScene.getAllocator<DrawableHandle<T>>())...};
                 auto& list = get_element_by_type<DrawableHandleList<T>>(l);
                 list.emplace_back(std::move(handle));
                 defaultLayer.layer.emplace(order, std::move(l));

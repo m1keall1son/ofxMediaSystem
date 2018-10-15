@@ -207,4 +207,54 @@ namespace mediasystem {
         return detail::cast<T,U,Handle>::reinterpretCast(handle);
     }
     
+    /*
+     //would be coupled to the allocation model
+     template<typename Alloc>
+     struct alloc_deleter
+     {
+     alloc_deleter(const Alloc& a) : a(a) { }
+     
+     typedef typename std::allocator_traits<Alloc>::pointer pointer;
+     
+     void operator()(pointer p) const
+     {
+     Alloc aa(a);
+     std::allocator_traits<Alloc>::destroy(aa, std::addressof(*p));
+     std::allocator_traits<Alloc>::deallocate(aa, p, 1);
+     }
+     
+     private:
+     Alloc a;
+     };
+     
+     template<typename T, typename Alloc, typename... Args>
+     auto
+     allocate_unique(const Alloc& alloc, Args&&... args)
+     {
+     using AT = std::allocator_traits<Alloc>;
+     static_assert(std::is_same<typename AT::value_type, std::remove_cv_t<T>>{}(),
+     "Allocator has the wrong value_type");
+     
+     Alloc a(alloc);
+     auto p = AT::allocate(a, 1);
+     try {
+     AT::construct(a, std::addressof(*p), std::forward<Args>(args)...);
+     using D = alloc_deleter<Alloc>;
+     return std::unique_ptr<T, D>(p, D(a));
+     }
+     catch (...)
+     {
+     AT::deallocate(a, p, 1);
+     throw;
+     }
+     }
+     
+     int main()
+     {
+     std::allocator<int> a;
+     auto p = allocate_unique<int>(a, 0);
+     return *p;
+     }
+     */
+    
 }//end namespace mediasystem

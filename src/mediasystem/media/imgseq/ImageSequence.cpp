@@ -165,8 +165,8 @@ namespace mediasystem {
                 //check delay
                 if(mDelayElapsed >= mDelay){
                     if(mWaitingOnDelay){
-                        if(mOnStartAfterDelay)
-                            mOnStartAfterDelay();
+                        if(mHandlersMap[ON_DELAYED_START_HANDLER])
+                            mHandlersMap[ON_DELAYED_START_HANDLER]();
                         mWaitingOnDelay = false;
                     }
                     
@@ -196,33 +196,33 @@ namespace mediasystem {
                                     ofLogNotice() << mSeqPaths[0].string() << " finished!";
                                     mState.setFinished();
                                     ImageSequenceBase::stop();
-                                    if(mOnFinishFn)
-                                        mOnFinishFn();
+                                    if(mHandlersMap[ON_FINISH_HANDLER])
+                                        mHandlersMap[ON_FINISH_HANDLER]();
                                     return;
                                 }
                                 
-                                if(mOnUpdateFn)
-                                    mOnUpdateFn();
+                                if(mHandlersMap[ON_UPDATE_HANDLER])
+                                    mHandlersMap[ON_UPDATE_HANDLER]();
                                 
                                 //check loop
                                 if(mState.isLooping()){
                                     if(mState.isPalindrome()){
                                         if(mState.isReversed() != prevReverse){
-                                            if(mOnLoopedFn)
-                                                mOnLoopedFn();
+                                            if(mHandlersMap[ON_LOOPED_HANDLER])
+                                                mHandlersMap[ON_LOOPED_HANDLER]();
                                             resetKeyFrames();
                                         }
                                     }else{
                                         if(mState.isReversed()){
                                             if(mState.currentPosition > prevPosition){
-                                                if(mOnLoopedFn)
-                                                    mOnLoopedFn();
+                                                if(mHandlersMap[ON_LOOPED_HANDLER])
+                                                    mHandlersMap[ON_LOOPED_HANDLER]();
                                                 resetKeyFrames();
                                             }
                                         }else{
                                             if(mState.currentPosition < prevPosition){
-                                                if(mOnLoopedFn)
-                                                    mOnLoopedFn();
+                                                if(mHandlersMap[ON_LOOPED_HANDLER])
+                                                    mHandlersMap[ON_LOOPED_HANDLER]();
                                                 resetKeyFrames();
                                             }
                                         }

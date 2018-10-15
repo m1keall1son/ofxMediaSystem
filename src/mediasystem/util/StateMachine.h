@@ -29,6 +29,12 @@ namespace mediasystem {
         public:
 
             State(std::string name):mName(std::move(name)){};
+            
+            State(const State&) = delete;
+            State& operator=(const State&) = delete;
+            
+            State(State&&) = default;
+            State& operator=(State&&) = default;
 
             State& enterFn(EnterFn fn){ mEnter = std::move(fn); return *this; }
             State& exitFn(EnterFn fn){ mExit = std::move(fn); return *this; }
@@ -79,8 +85,8 @@ namespace mediasystem {
             friend StateMachine;
         };
         
-        void addState(State state);
-        void addChildState(std::string parent, State state);
+        void addState(State&& state);
+        void addChildState(std::string parent, State&& state);
         void removeState(std::string state);
         void changeParentTo(std::string state, std::string newParent);
         void requestState(std::string state, bool force = false);

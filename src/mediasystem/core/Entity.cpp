@@ -315,6 +315,13 @@ namespace mediasystem {
         return graph->children;
     }
     
+    void Entity::removeChildren(bool keepGlobalPosition)
+    {
+        auto graph = getComponent<EntityGraph>();
+        for(auto& child:graph->children){
+            graph->removeChild(child,keepGlobalPosition);
+        }
+    }
     
     //node component pass through
     void Entity::setPosition(float px, float py, float pz)

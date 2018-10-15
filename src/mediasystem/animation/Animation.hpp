@@ -94,7 +94,7 @@ namespace mediasystem {
         }
         
         void setUpdateFn(std::function<void()> update) override {
-            mOnUpdateFn = [&,update](){
+            Playable::setUpdateFn([&,update](){
                 auto percent = getPercentComplete();
                 if(mEaseFn)
                     percent = mEaseFn(percent);
@@ -103,7 +103,7 @@ namespace mediasystem {
                     *mTarget = mCurrent;
                 if(update)
                     update();
-            };
+            });
         }
         
         void animateTo(T end){ mStart = mCurrent; mEnd = std::move(end); play(); }
