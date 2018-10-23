@@ -10,8 +10,6 @@
 
 namespace mediasystem {
     
-#if defined(MS_ALLOW_ALLOCATION_MIDDLEWARE)
-
     enum AllocationMiddlewareType { CONSOLE_LOGGER, NO_MIDDLEWARE };
     
     class IAllocaitonMiddleware {
@@ -53,7 +51,5 @@ namespace mediasystem {
         size_t mCurrentAllocationsCount{0};
         size_t mDeallocationsCount{0};
     };
-    
-#endif
-    
+        
 }//end namespace mediasystem

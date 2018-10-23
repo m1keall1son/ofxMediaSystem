@@ -18,11 +18,11 @@ namespace mediasystem {
     public:
         ALLOCATOR_TRAITS(T);
         
-        explicit _Allocator(AllocationManager* manager = nullptr):mManager(manager){
+        explicit _Allocator(AllocationManager* manager = nullptr, const AllocationPolicyFormat& fmt = AllocationPolicyFormat()):mManager(manager){
             if(mManager){
                 auto policy = mManager->getPolicy<T>();
                 if(!policy){
-                    mManager->setPolicy<T>();
+                    mManager->setPolicy<T>(fmt);
                 }
             }
         }

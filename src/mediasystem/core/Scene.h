@@ -239,8 +239,8 @@ namespace mediasystem {
         void addChildState(std::string parent, StateMachine::State&& state);
         
         template<typename T>
-        Allocator<T> getAllocator(){
-            return Allocator<T>(&mAllocationManager);
+        Allocator<T> getAllocator(const AllocationPolicyFormat& fmt = AllocationPolicyFormat()){
+            return Allocator<T>(&mAllocationManager, fmt);
         }
         
 	protected:

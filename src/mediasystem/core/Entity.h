@@ -35,33 +35,33 @@ namespace mediasystem {
         
     };
     
-    class GraphComponent {
-    public:
-        
-        GraphComponent(EntityHandle self);
-        ~GraphComponent();
-        
-        void setParent(EntityHandle p, bool keepGlobalPosition = true);
-        void removeFromParent(bool keepGlobalPosition = true);
-        void addChild(EntityHandle child, bool keepGlobalPosition = true);
-        void removeChild(EntityHandle child, bool keepGlobalPosition = true);
-        std::vector<EntityHandle> getChildren();
-        std::vector<EntityHandle> filterChildren( const std::function<bool(Entity&)>& predicate );
-        EntityHandle firstChild( const std::function<bool(Entity&)>& predicate );
-
-    private:
-        
-        EntityHandle findSiblingHead();
-        EntityHandle findSiblingTail();
-
-        void removeFromSiblings();
-        
-        EntityHandle mSelf;
-        EntityHandle mParent;
-        EntityHandle mPrevSibling;
-        EntityHandle mNextSibling;
-        EntityHandle mChildHead;
-    };
+//    class GraphComponent {
+//    public:
+//        
+//        GraphComponent(EntityHandle self);
+//        ~GraphComponent();
+//        
+//        void setParent(EntityHandle p, bool keepGlobalPosition = true);
+//        void removeFromParent(bool keepGlobalPosition = true);
+//        void addChild(EntityHandle child, bool keepGlobalPosition = true);
+//        void removeChild(EntityHandle child, bool keepGlobalPosition = true);
+//        std::vector<EntityHandle> getChildren();
+//        std::vector<EntityHandle> filterChildren( const std::function<bool(Entity&)>& predicate );
+//        EntityHandle firstChild( const std::function<bool(Entity&)>& predicate );
+//
+//    private:
+//        
+//        EntityHandle findSiblingHead();
+//        EntityHandle findSiblingTail();
+//
+//        void removeFromSiblings();
+//        
+//        EntityHandle mSelf;
+//        EntityHandle mParent;
+//        EntityHandle mPrevSibling;
+//        EntityHandle mNextSibling;
+//        EntityHandle mChildHead;
+//    };
     
     class Entity {
     public:

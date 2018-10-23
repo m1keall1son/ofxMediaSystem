@@ -272,6 +272,15 @@ namespace mediasystem {
             resetKeyFrames();
         }
         
+        virtual void setDuration(T duration){
+            mState.reset();
+            resetKeyFrames();
+            mState.duration = duration;
+            if(mState.loopPointOut > duration){
+                mState.loopPointOut = duration;
+            }
+        }
+        
         virtual void init(T duration, const Options& options = Options()){
             mState.flags = options.getFlags();
             auto loopPoints = options.getLoopPoints();
@@ -289,15 +298,24 @@ namespace mediasystem {
             }
             
             mState.duration = duration;
-            mKeyFrames = std::move(options.getKeyFrames());
+            if(!options.getKeyFrames().empty())
+                mKeyFrames = std::move(options.getKeyFrames());
             mDelay = options.mDelay;
             mSpeed = options.mSpeed;
-            mHandlersMap[ON_START_HANDLER] = std::move(options.mOnStartFn);
-            mHandlersMap[ON_DELAYED_START_HANDLER] = std::move(options.mOnStartAfterDelay);
-            mHandlersMap[ON_FINISH_HANDLER] = std::move(options.mOnFinishFn);
-            mHandlersMap[ON_UPDATE_HANDLER] = std::move(options.mOnUpdateFn);
-            mHandlersMap[ON_LOOPED_HANDLER] = std::move(options.mOnLoopedFn);
-            mHandlersMap[ON_STOP_HANDLER] = std::move(options.mOnStopFn);
+            
+            if(options.mOnStartFn)
+                mHandlersMap[ON_START_HANDLER] = std::move(options.mOnStartFn);
+            if(options.mOnStartAfterDelay)
+                mHandlersMap[ON_DELAYED_START_HANDLER] = std::move(options.mOnStartAfterDelay);
+            if(options.mOnFinishFn)
+                mHandlersMap[ON_FINISH_HANDLER] = std::move(options.mOnFinishFn);
+            if(options.mOnUpdateFn)
+                mHandlersMap[ON_UPDATE_HANDLER] = std::move(options.mOnUpdateFn);
+            if(options.mOnLoopedFn)
+                mHandlersMap[ON_LOOPED_HANDLER] = std::move(options.mOnLoopedFn);
+            if(options.mOnStopFn)
+                mHandlersMap[ON_STOP_HANDLER] = std::move(options.mOnStopFn);
+            
             resetKeyFrames();
         }
         

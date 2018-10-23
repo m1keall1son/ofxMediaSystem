@@ -18,6 +18,12 @@ namespace mediasystem {
     
     //defaults to HEAP
     struct AllocationPolicyFormat {
+        
+        AllocationPolicyFormat(){
+            for(auto& m : middleware){
+                m = AllocationMiddlewareType::NO_MIDDLEWARE;
+            }
+        }
 
         AllocationPolicyFormat& defaultHeapStrategy(){ strategy = AllocationStrategyType::DEFAULT_HEAP; return *this; }
         AllocationPolicyFormat& unreclaimedPoolStrategy(){ strategy = AllocationStrategyType::UNRECLAIMED_POOL; return *this; }
@@ -36,10 +42,8 @@ namespace mediasystem {
         size_t storageSize{0};
         size_t storageInitialCount{1};
         size_t requestedStorageSize{0};
-#if defined(MS_ALLOW_ALLOCATION_MIDDLEWARE)
         AllocationPolicyFormat& addConsoleLoggerMiddleware(){ middleware[AllocationMiddlewareType::CONSOLE_LOGGER] = AllocationMiddlewareType::CONSOLE_LOGGER; return *this; }
-        std::array<AllocationMiddlewareType,AllocationMiddlewareType::NO_MIDDLEWARE> middleware{AllocationMiddlewareType::NO_MIDDLEWARE};
-#endif
+        std::array<AllocationMiddlewareType,AllocationMiddlewareType::NO_MIDDLEWARE> middleware;
         
     };
     
@@ -55,10 +59,8 @@ namespace mediasystem {
         virtual size_t getStorageCount() const = 0;
         virtual size_t getStorageInitialCount() const = 0;
         virtual AllocationPolicyFormat getFormat() const = 0;
-#if defined(MS_ALLOW_ALLOCATION_MIDDLEWARE)
         virtual std::vector<AllocationMiddlewareType> getMiddlewareTypes() const = 0;
         virtual void addMiddleware( std::unique_ptr<IAllocaitonMiddleware>&& middleware ) = 0;
-#endif
     };
     
     template<typename Strategy, typename Storage>
@@ -101,11 +103,9 @@ namespace mediasystem {
 #endif
         }
         
-#if defined(MS_ALLOW_ALLOCATION_MIDDLEWARE)
         void addMiddleware( std::unique_ptr<IAllocaitonMiddleware>&& middleware )override{
             mMiddlewares[middleware->getType()] = std::move(middleware);
         }
-#endif
         
         AllocationStrategyType getStrategyType() const override { return mStrategy.getType(); }
         AllocationStorageType getStorageType() const override { { return mStorage.getType(); } }
@@ -113,7 +113,6 @@ namespace mediasystem {
         size_t getStorageSize() const override { return mStorage.getStorageSize(); }
         size_t getStorageCount() const override { return mStorage.getStorageCount(); }
         size_t getStorageInitialCount() const override { return mStorage.getStorageInitialCount(); }
-#if defined(MS_ALLOW_ALLOCATION_MIDDLEWARE)
         std::vector<AllocationMiddlewareType> getMiddlewareTypes() const override {
             std::vector<AllocationMiddlewareType> ret;
             for(auto & middleware: mMiddlewares){
@@ -125,7 +124,6 @@ namespace mediasystem {
             }
             return ret;
         }
-#endif
         
         AllocationPolicyFormat getFormat() const override {
             AllocationPolicyFormat fmt;
@@ -134,7 +132,6 @@ namespace mediasystem {
             fmt.storageSize = mStorage.getStorageSize();
             fmt.requestedStorageSize = mStorage.getRequestedStorageSize();
             fmt.storageInitialCount = mStorage.getStorageInitialCount();
-#if defined(MS_ALLOW_ALLOCATION_MIDDLEWARE)
             size_t i = 0;
             for(auto & middleware: mMiddlewares){
                 if(middleware){
@@ -144,15 +141,12 @@ namespace mediasystem {
                 }
                 ++i;
             }
-#endif
             return fmt;
         }
 
         
     private:
-#if defined(MS_ALLOW_ALLOCATION_MIDDLEWARE)
-        std::array<std::unique_ptr<IAllocaitonMiddleware>,AllocationMiddlewareType::NO_MIDDLEWARE> mMiddlewares{nullptr};
-#endif
+        std::array<std::unique_ptr<IAllocaitonMiddleware>,AllocationMiddlewareType::NO_MIDDLEWARE> mMiddlewares;
         bool mInitialized{false};
         Storage mStorage;
         Strategy mStrategy;
@@ -187,11 +181,9 @@ namespace mediasystem {
 #endif
         }
         
-#if defined(MS_ALLOW_ALLOCATION_MIDDLEWARE)
         void addMiddleware( std::unique_ptr<IAllocaitonMiddleware>&& middleware ) override {
             mMiddlewares[middleware->getType()] = std::move(middleware);
         }
-#endif
         
         AllocationStrategyType getStrategyType() const override { return DEFAULT_HEAP; }
         AllocationStorageType getStorageType() const override { { return NO_STORAGE; } }
@@ -199,7 +191,6 @@ namespace mediasystem {
         size_t getRequestedStorageSize() const override { return 0; }
         size_t getStorageCount() const override { return 0; }
         size_t getStorageInitialCount() const override { return 0; }
-#if defined(MS_ALLOW_ALLOCATION_MIDDLEWARE)
         std::vector<AllocationMiddlewareType> getMiddlewareTypes() const override {
             std::vector<AllocationMiddlewareType> ret;
             for(auto & middleware: mMiddlewares){
@@ -211,11 +202,9 @@ namespace mediasystem {
             }
             return ret;
         }
-#endif
         
         AllocationPolicyFormat getFormat() const override {
             AllocationPolicyFormat fmt; //use default
-#if defined(MS_ALLOW_ALLOCATION_MIDDLEWARE)
             size_t i = 0;
             for(auto & middleware: mMiddlewares){
                 if(middleware){
@@ -225,14 +214,11 @@ namespace mediasystem {
                 }
                 ++i;
             }
-#endif
             return fmt;
         }
         
     private:
-#if defined(MS_ALLOW_ALLOCATION_MIDDLEWARE)
-        std::array<std::unique_ptr<IAllocaitonMiddleware>,AllocationMiddlewareType::NO_MIDDLEWARE> mMiddlewares{nullptr};
-#endif
+        std::array<std::unique_ptr<IAllocaitonMiddleware>,AllocationMiddlewareType::NO_MIDDLEWARE> mMiddlewares;
     };
     
     

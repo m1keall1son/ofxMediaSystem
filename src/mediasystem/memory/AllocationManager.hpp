@@ -57,7 +57,7 @@ namespace mediasystem {
             
             switch(fmt.strategy){
                 case DEFAULT_HEAP:{
-                    auto heapPolicy = std::unique_ptr<DefaultHeapAllocation<T>>( new DefaultHeapAllocation<T>);
+                    auto heapPolicy = std::unique_ptr<DefaultHeapAllocation<T>>( new DefaultHeapAllocation<T>());
                     policy = std::move(heapPolicy);
                 }break;
                 case UNRECLAIMED_POOL: {
@@ -76,16 +76,14 @@ namespace mediasystem {
                     }
                 }break;
             }
-#if defined(MS_ALLOW_ALLOCATION_MIDDLEWARE)
             for(auto & middleware : fmt.middleware){
                 switch(middleware){
                     case CONSOLE_LOGGER:{
-                        policy->addMiddleware( std::unique_ptr<AllocationConsoleLogger<T>>( new AllocationConsoleLogger<T>) );
+                        policy->addMiddleware( std::unique_ptr<AllocationConsoleLogger<T>>( new AllocationConsoleLogger<T>()) );
                     }break;
                     default: continue;
                 }
             }
-#endif
             return std::move(policy);
         }
         

@@ -38,7 +38,10 @@ namespace mediasystem {
             mRequestedSize(size),
             mObjectSize(((objectSize + sizeof(void *)-1) / sizeof(void *)) * sizeof(void *)),
             mBlockSize(mObjectSize * (size/mObjectSize))
-        {}
+        {
+            assert(objectSize <= size);
+            assert(mObjectSize <= mBlockSize);
+        }
         
         void initialize() override {
             mObjects = ::operator new(mBlockSize);
