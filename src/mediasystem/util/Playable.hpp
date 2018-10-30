@@ -64,6 +64,8 @@ namespace mediasystem {
                             ret.flags |= PLAYSTATE_FINISHED;
                         }else{
                             ret.currentPosition -= amount;
+                            if(ret.currentPosition < 0)
+                                ret.currentPosition = 0;
                         }
                     }
                     else {
@@ -72,6 +74,8 @@ namespace mediasystem {
                             ret.flags |= PLAYSTATE_FINISHED;
                         }else{
                             ret.currentPosition += amount;
+                            if(ret.currentPosition > ret.duration)
+                                ret.currentPosition = ret.duration;
                         }
                     }
                 }

@@ -195,7 +195,7 @@ namespace mediasystem {
         }
         
         static size_t sNextComponentId;
-        std::bitset<32> mComponents;
+        std::bitset<64> mComponents;
         size_t mId{std::numeric_limits<size_t>::max()};
         Scene& mScene;
         friend Scene;

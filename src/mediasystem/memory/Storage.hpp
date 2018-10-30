@@ -45,9 +45,6 @@ namespace mediasystem {
         
         void initialize() override {
             mObjects = ::operator new(mBlockSize);
-            std::cout << "new block of size: " << mBlockSize << std::endl;
-            std::cout << "object size: " << mObjectSize << std::endl;
-            std::cout << "allowed num objects per block: " << (mBlockSize / mObjectSize) << std::endl;
             std::memset(mObjects, 0, mBlockSize);
         }
         

@@ -64,13 +64,18 @@ namespace mediasystem {
     //transition in
     class SceneChange : public SceneEvent<SceneChange> {
     public:
-        SceneChange(Scene& current_scene, std::string next_sene);
+        enum Order { DRAW_OVER_PREVIOUS, DRAW_UNDER_PREVIOUS };
+        SceneChange(Scene& current_scene, std::string next_sene, Order order = Order::DRAW_OVER_PREVIOUS);
         SceneChange(Scene& current_scene, StrongHandle<Scene> next_sene);
         const std::string& getNextSceneName()const{ return mNextSceneName; }
         StrongHandle<Scene> getNextScene(){ return mNextScene; }
+        Order getDrawOrder(){ return mOrder; }
+        void setDrawOverPrvious(){ mOrder = DRAW_OVER_PREVIOUS; }
+        void setDrawUnderPrvious(){ mOrder = DRAW_UNDER_PREVIOUS; }
     private:
         StrongHandle<Scene> mNextScene{nullptr};
         std::string mNextSceneName;
+        Order mOrder{DRAW_OVER_PREVIOUS};
     };
  
     class Init : public SceneEvent<Init> {

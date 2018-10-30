@@ -51,8 +51,9 @@ namespace mediasystem {
         return scene;
     }
     
-    void SceneManager::changeSceneTo(const std::string& nextScene)
+    void SceneManager::changeSceneTo(const std::string& nextScene, SceneChange::Order drawOrder)
     {
+        mDrawOrder = drawOrder;
         mNextScene = nullptr;
         mNextScene = getScene(nextScene);
         if(!mNextScene){
@@ -62,10 +63,15 @@ namespace mediasystem {
         }
     }
     
-    void SceneManager::changeSceneTo(StrongHandle<Scene> scene)
+    void SceneManager::changeSceneTo(StrongHandle<Scene> scene, SceneChange::Order drawOrder )
     {
+        mDrawOrder = drawOrder;
         mNextScene = scene;
-        transition();
+        if(mNextScene)
+            transition();
+        else{
+            MS_LOG_ERROR("Passed a null scene!");
+        }
     }
     
     void SceneManager::addScene(StrongHandle<Scene> scene)
@@ -79,6 +85,9 @@ namespace mediasystem {
         MS_LOG_VERBOSE("Transitioning complete! swapping current and next");
         mCurrentScene = mNextScene;
         mNextScene = nullptr;
+        mBottom = nullptr;
+        mTop = mCurrentScene;
+        
         return EventStatus::REMOVE_THIS_DELEGATE;
     }
     
@@ -100,8 +109,21 @@ namespace mediasystem {
                 mNextScene = nullptr;
             }
             
+            switch(mDrawOrder){
+                case SceneChange::Order::DRAW_OVER_PREVIOUS:
+                    mBottom = mCurrentScene;
+                    mTop = mNextScene;
+                    break;
+                case SceneChange::Order::DRAW_UNDER_PREVIOUS:
+                    mBottom = mNextScene;
+                    mTop = mCurrentScene;
+                    break;
+            }
+            
         }else{
             mCurrentScene = mNextScene;
+            mTop = mNextScene;
+            mBottom = nullptr;
             mNextScene = nullptr;
             mCurrentScene->notifyTransitionIn();
             MS_LOG_VERBOSE("Changing scene to: " + mCurrentScene->getName());
@@ -129,11 +151,10 @@ namespace mediasystem {
         MS_LOG_VERBOSE("Received a scene change request...");
         
         auto cast = staticCast<SceneChange>(sceneChange);
-        mNextScene = cast->getNextScene();
-        if(mNextScene){
-            transition();
+        if(cast->getNextScene()){
+            changeSceneTo(cast->getNextScene(),cast->getDrawOrder());
         }else{
-            changeSceneTo(cast->getNextSceneName());
+            changeSceneTo(cast->getNextSceneName(),cast->getDrawOrder());
         }
         return EventStatus::SUCCESS;
     }
@@ -176,11 +197,11 @@ namespace mediasystem {
     
     void SceneManager::draw()
     {
-        if(mCurrentScene)
-            mCurrentScene->notifyDraw();
+        if(mBottom)
+            mBottom->notifyDraw();
         
-        if(mNextScene)
-            mNextScene->notifyDraw();
+        if(mTop)
+            mTop->notifyDraw();
     }
 
     void SceneManager::destroyScene(const std::string& name)
@@ -210,6 +231,8 @@ namespace mediasystem {
         mScenes.clear();
         mNextScene = nullptr;
         mCurrentScene = nullptr;
+        mTop = nullptr;
+        mBottom = nullptr;
         resetFrameTime();
     }
     

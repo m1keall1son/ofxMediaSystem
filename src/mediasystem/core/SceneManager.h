@@ -39,8 +39,8 @@ namespace mediasystem {
         
         StrongHandle<Scene> createScene(const std::string& name, AllocationManager&& allocator = AllocationManager());
         
-        void changeSceneTo(const std::string& scene);
-        void changeSceneTo(StrongHandle<Scene> scene);
+        void changeSceneTo(const std::string& scene, SceneChange::Order drawOrder = SceneChange::Order::DRAW_OVER_PREVIOUS );
+        void changeSceneTo(StrongHandle<Scene> scene, SceneChange::Order drawOrder = SceneChange::Order::DRAW_OVER_PREVIOUS );
         void addScene(StrongHandle<Scene> scene);
         void destroyScene(const std::string& name);
         void destroyScene(const StrongHandle<Scene>& scene);
@@ -61,8 +61,10 @@ namespace mediasystem {
         bool mSetTime{false};
         StrongHandle<Scene> mNextScene{nullptr};
         StrongHandle<Scene> mCurrentScene{nullptr};
-		std::vector<StrongHandle<Scene>> mScenes;
-        
+        SceneChange::Order mDrawOrder;
+        StrongHandle<Scene> mTop{nullptr};
+        StrongHandle<Scene> mBottom{nullptr};
+        std::vector<StrongHandle<Scene>> mScenes;
 	};
 
 }//end namespace pf
