@@ -3,16 +3,56 @@
 #include <map>
 #include "ofMain.h"
 #include "mediasystem/events/EventManager.h"
-#include "mediasystem/core/ComponentSystem.hpp"
 #include "mediasystem/events/SceneEvents.h"
 #include "mediasystem/util/StateMachine.h"
+#include "mediasystem/core/Handle.h"
+#include "mediasystem/memory/Memory.h"
 
 namespace mediasystem {
     
     class Entity;
+    using EntityStrongHandle = StrongHandle<Entity>;
+    using EntityHandle = Handle<Entity>;
+    class Scene;
     
-    using EntityRef = std::shared_ptr<Entity>;
-    using EntityHandle = std::weak_ptr<Entity>;
+    namespace detail {
+        using GenericStrongHandle = StrongHandle<void>;
+        using GenericStrongHandleAllocator = Allocator<std::pair<const size_t, GenericStrongHandle>>;
+    }
+    
+    using GenericComponentMap = std::map<size_t, detail::GenericStrongHandle, std::less<size_t>, detail::GenericStrongHandleAllocator>;
+    
+    //adapter class
+    template<typename ComponentType>
+    class ComponentMap {
+    public:
+        
+        ComponentMap() = default;
+        
+        class iterator {
+        public:
+            StrongHandle<ComponentType> next(){
+                if(mIt == mEnd)
+                    return nullptr;
+                return staticCast<ComponentType>((*mIt++).second);
+            }
+        private:
+            iterator() = default;
+            iterator( GenericComponentMap::iterator begin, GenericComponentMap::iterator end ):mIt(begin),mEnd(end){}
+            GenericComponentMap::iterator mIt;
+            GenericComponentMap::iterator mEnd;
+            friend ComponentMap;
+        };
+        
+        iterator iter(){ return mComponents ? iterator(mComponents->begin(), mComponents->end()) : iterator(); }
+        size_t size() const { return mComponents ? mComponents->size() : 0; }
+        bool empty() const { return mComponents ? mComponents->empty() : true; }
+        
+    private:
+        ComponentMap(GenericComponentMap* components):mComponents(components){}
+        GenericComponentMap* mComponents{nullptr};
+        friend Scene;
+    };
     
     class Scene : public EventManager {
 	public:
@@ -24,8 +64,7 @@ namespace mediasystem {
         
         virtual ~Scene();
         
-        Scene(const std::string& name, float transition_duration = 0.f);
-        Scene(const std::string& name, float transition_in_duration, float transition_out_duration );
+        Scene(const std::string& name, AllocationManager&& allocationManager = AllocationManager());
         
         //non copyable
         Scene(const Scene&) = delete;
@@ -51,48 +90,142 @@ namespace mediasystem {
         virtual EntityHandle getEntity(size_t id);
 
         template<typename SystemType, typename...Args>
-        std::shared_ptr<SystemType> createSystem(Args&&...args)
-        {
-            return mSystemManager.createSystem<SystemType>(std::forward<Args>(args)...);
+        StrongHandle<SystemType> createSystem(Args&&...args){
+            auto shared = makeStrongHandle<SystemType>(std::forward<Args>(args)...);
+            auto generic = staticCast<void>(shared);
+            auto it = mSystems.emplace(type_id<SystemType>,std::move(generic));
+            if(it.second){
+                return shared;
+            }else{
+                MS_LOG_ERROR("Scene: CANNOT CREATE SYSTEM");
+                return nullptr;
+            }
         }
         
         template<typename SystemType>
-        std::shared_ptr<SystemType> getSystem()
-        {
-            return mSystemManager.getSystem<SystemType>();
+        StrongHandle<SystemType> getSystem(){
+            auto found = mSystems.find(type_id<SystemType>);
+            if(found != mSystems.end()){
+                auto shared = staticCast<SystemType>(found->second);
+                return std::move(shared);
+            }else{
+                MS_LOG_ERROR("Scene: DOES NOT HAVE SYSTEM");
+                return nullptr;
+            }
         }
         
         template<typename SystemType>
-        bool destroySystem()
-        {
-            return mSystemManager.destroySystem<SystemType>();
+        bool destroySystem(){
+            auto found = mSystems.find(type_id<SystemType>);
+            if(found != mSystems.end()){
+                mSystems.erase(found);
+                return true;
+            }else{
+                MS_LOG_ERROR("Scene: DOES NOT HAVE SYSTEM");
+                return false;
+            }
         }
         
-        template<typename Component, typename...Args>
-        std::weak_ptr<Component> createComponent(size_t entity_id, Args&&...args){
-            auto ret = mComponentManager.create<Component>(entity_id, std::forward<Args>(args)...);
-            queueEvent<NewComponent<Component>>(getEntity(entity_id), ret);
-            return ret;
-        }
-        
-        template<typename Component>
-        bool destroyComponent(size_t entity_id){
-            return mComponentManager.destroy<Component>(entity_id);
-        }
-        
-        template<typename Component>
-        std::weak_ptr<Component> getComponent(size_t entity_id){
-            return mComponentManager.retrieve<Component>(entity_id);
+        template<typename ComponentType, typename...Args>
+        Handle<ComponentType> createComponent(size_t entity_id, Args&&...args){
+            auto shared = allocateStrongHandle<ComponentType>( getAllocator<ComponentType>(), std::forward<Args>(args)...);
+            auto generic = staticCast<void>(shared);
+            auto found = mComponents.find(type_id<ComponentType>);
+            if(found != mComponents.end()){
+                auto it = found->second.emplace( entity_id, std::move(generic) );
+                if(it.second){
+                    queueEvent<NewComponent<ComponentType>>(getEntity(entity_id), shared);
+                    return shared;
+                }else{
+                    MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " COULD NOT CREATE COMPONENT");
+                    return Handle<ComponentType>();
+                }
+            }else{
+                auto it = mComponents.emplace(type_id<ComponentType>, GenericComponentMap( getAllocator<std::pair<const size_t, detail::GenericStrongHandle>>() ));
+                if(it.second){
+                    auto res = it.first->second.emplace(entity_id, std::move(generic));
+                    if(res.second){
+                        queueEvent<NewComponent<ComponentType>>( getEntity(entity_id), shared);
+                        return shared;
+                    }else{
+                        MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " COULD NOT CREATE COMPONENT");
+                        return Handle<ComponentType>();
+                    }
+                }else{
+                    MS_LOG_ERROR("ComponentManager: COULD NOT CREATE GENERIC COMPONENT MAP FOR COMPONENT TYPE");
+                    return Handle<ComponentType>();
+                }
+            }
         }
         
         template<typename ComponentType>
-        ComponentMap<ComponentType> getComponents(){
-            return mComponentManager.getComponents<ComponentType>();
+        Handle<ComponentType> getComponent(size_t entity_id){
+            auto found = mComponents.find(type_id<ComponentType>);
+            if(found != mComponents.end()){
+                auto foundComp = found->second.find(entity_id);
+                if(foundComp != found->second.end()){
+                    return staticCast<ComponentType>(foundComp->second);
+                }else{
+                    MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+                    return Handle<ComponentType>();
+                }
+            }else{
+                MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+                return Handle<ComponentType>();
+            }
         }
         
-        virtual std::weak_ptr<void> getComponent(type_id_t type, size_t entity_id);
-        virtual bool destroyComponent(type_id_t type, size_t entity_id);
-
+        Handle<void> getComponent(type_id_t type, size_t entity_id){
+            auto found = mComponents.find(type);
+            if(found != mComponents.end()){
+                auto foundComp = found->second.find(entity_id);
+                if(foundComp != found->second.end()){
+                    return foundComp->second;
+                }else{
+                    MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+                    return Handle<void>();
+                }
+            }else{
+                MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+                return Handle<void>();
+            }
+        }
+        
+        template<typename ComponentType>
+        bool destroyComponent(size_t entity_id){
+            auto found = mComponents.find(type_id<ComponentType>);
+            if(found != mComponents.end()){
+                auto foundComp = found->second.find(entity_id);
+                if(foundComp != found->second.end()){
+                    found->second.erase(foundComp);
+                    return true;
+                }else{
+                    MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+                    return false;
+                }
+            }else{
+                MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+                return false;
+            }
+        }
+        
+        bool destroyComponent(type_id_t type, size_t entity_id);
+        
+        template<typename ComponentType>
+        ComponentMap<ComponentType> getComponents(){
+            auto found = mComponents.find(type_id<ComponentType>);
+            if(found != mComponents.end()){
+                return ComponentMap<ComponentType>(&found->second);
+            }
+            auto it = mComponents.emplace(type_id<ComponentType>, GenericComponentMap( getAllocator<std::pair<const size_t, detail::GenericStrongHandle>>() ));
+            if(it.second){
+                return ComponentMap<ComponentType>(&it.first->second);
+            }else{
+                MS_LOG_ERROR("ComponentManager: COULD NOT CREATE GENERIC COMPONENT MAP FOR COMPONENT TYPE");
+                return ComponentMap<ComponentType>();
+            }
+        }
+        
         inline bool hasStarted() const { return mHasStarted; }
         
         inline bool isTransitioning() const { return mIsTransitioning; }
@@ -104,6 +237,11 @@ namespace mediasystem {
         void requestState(std::string state);
         void addState(StateMachine::State&& state);
         void addChildState(std::string parent, StateMachine::State&& state);
+        
+        template<typename T>
+        Allocator<T> getAllocator(const AllocationPolicyFormat& fmt = AllocationPolicyFormat()){
+            return Allocator<T>(&mAllocationManager, fmt);
+        }
         
 	protected:
         
@@ -128,10 +266,15 @@ namespace mediasystem {
         
         inline const std::string& getPreviousSceneName() const { return mPreviousScene; }
         
+        void clearSystems();
+        
 		std::string	mName;
-        std::map<size_t, EntityRef, std::less<size_t>, DynamicAllocator<std::pair<const size_t, EntityRef>>> mEntities;
+        AllocationManager mAllocationManager;
+        std::map<size_t, EntityStrongHandle, std::less<size_t>, Allocator<std::pair<const size_t, EntityStrongHandle>>> mEntities{ Allocator<std::pair<const size_t, EntityStrongHandle>>(&mAllocationManager) };
 
 	private:
+        
+        void clearComponents();
         
         void collectEntities();
         
@@ -148,12 +291,12 @@ namespace mediasystem {
         float mTransitionStart{0.f};
         
         bool mHasStarted{false};
-        ComponentManager mComponentManager;
-        SystemManager mSystemManager;
+        std::map<type_id_t, GenericComponentMap> mComponents;
+        std::map<type_id_t, StrongHandle<void>> mSystems;
         std::deque<size_t> mDestroyedEntities;
         std::string mPreviousScene;
         StateMachine mSequence;
         friend class SceneManager;
 	};
-
+    
 }//end namespace mediasystem

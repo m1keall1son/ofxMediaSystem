@@ -10,50 +10,51 @@
 #include <string>
 #include "mediasystem/events/IEvent.h"
 #include "mediasystem/util/TypeID.hpp"
+#include "mediasystem/core/Handle.h"
 
 namespace mediasystem {
     
     class Scene;
     class Entity;
-    using EntityHandle = std::weak_ptr<Entity>;
     
     //sent each time a scene adds a new entity
     class NewEntity : public Event<NewEntity> {
     public:
-        NewEntity(EntityHandle&& entity):mEntity(std::move(entity)){}
-        NewEntity(const EntityHandle& entity):mEntity(entity){}
-        inline EntityHandle getEntity(){ return mEntity; }
+        NewEntity(Handle<Entity>&& entity):mEntity(std::move(entity)){}
+        NewEntity(const Handle<Entity>& entity):mEntity(entity){}
+        inline Handle<Entity> getEntity(){ return mEntity; }
     private:
-        EntityHandle mEntity;
+        Handle<Entity> mEntity;
     };
     
     //sent each time a scene destroys an existing entity
     class DestroyEntity : public Event<DestroyEntity> {
     public:
-        DestroyEntity(EntityHandle&& entity):mEntity(std::move(entity)){}
-        DestroyEntity(const EntityHandle& entity):mEntity(entity){}
-        inline EntityHandle getEntity(){ return mEntity; }
+        DestroyEntity(Handle<Entity>&& entity):mEntity(std::move(entity)){}
+        DestroyEntity(const Handle<Entity>& entity):mEntity(entity){}
+        inline Handle<Entity> getEntity(){ return mEntity; }
     private:
-        EntityHandle mEntity;
+        Handle<Entity> mEntity;
     };
     
     //sent each time an entity adds a component of a specific type
     template<typename ComponentType>
     class NewComponent : public Event<NewComponent<ComponentType>> {
     public:
-        NewComponent(std::weak_ptr<Entity> entity, std::weak_ptr<ComponentType> comp):mEntity(std::move(entity)),mComponent(std::move(comp)){}
+        NewComponent(Handle<Entity> entity, Handle<ComponentType> comp):mEntity(std::move(entity)),mComponent(std::move(comp)){}
         inline type_id_t getComponentType(){ return type_id<ComponentType>; }
-        std::weak_ptr<ComponentType> getComponentHandle(){ return mComponent; }
-        std::weak_ptr<Entity> getEntityHandle(){ return mEntity; }
+        Handle<ComponentType> getComponentHandle(){ return mComponent; }
+        Handle<Entity> getEntityHandle(){ return mEntity; }
     private:
-        std::weak_ptr<Entity> mEntity;
-        std::weak_ptr<ComponentType> mComponent;
+        Handle<Entity> mEntity;
+        Handle<ComponentType> mComponent;
     };
     
     template<typename Self>
     class SceneEvent : public Event<Self> {
     public:
         SceneEvent(Scene& scene):mScene(scene){}
+        virtual ~SceneEvent() = default;
         Scene& getScene(){ return mScene; }
     private:
         Scene& mScene;
@@ -63,13 +64,18 @@ namespace mediasystem {
     //transition in
     class SceneChange : public SceneEvent<SceneChange> {
     public:
-        SceneChange(Scene& current_scene, std::string next_sene);
-        SceneChange(Scene& current_scene, std::shared_ptr<Scene> next_sene);
+        enum Order { DRAW_OVER_PREVIOUS, DRAW_UNDER_PREVIOUS };
+        SceneChange(Scene& current_scene, std::string next_sene, Order order = Order::DRAW_OVER_PREVIOUS);
+        SceneChange(Scene& current_scene, StrongHandle<Scene> next_sene);
         const std::string& getNextSceneName()const{ return mNextSceneName; }
-        std::shared_ptr<Scene> getNextScene(){ return mNextScene; }
+        StrongHandle<Scene> getNextScene(){ return mNextScene; }
+        Order getDrawOrder(){ return mOrder; }
+        void setDrawOverPrvious(){ mOrder = DRAW_OVER_PREVIOUS; }
+        void setDrawUnderPrvious(){ mOrder = DRAW_UNDER_PREVIOUS; }
     private:
-        std::shared_ptr<Scene> mNextScene{nullptr};
+        StrongHandle<Scene> mNextScene{nullptr};
         std::string mNextSceneName;
+        Order mOrder{DRAW_OVER_PREVIOUS};
     };
  
     class Init : public SceneEvent<Init> {

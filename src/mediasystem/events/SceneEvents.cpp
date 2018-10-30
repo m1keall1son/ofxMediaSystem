@@ -10,9 +10,10 @@
 
 namespace mediasystem {
     
-    SceneChange::SceneChange(Scene& current_scene, std::string next_scene):
+    SceneChange::SceneChange(Scene& current_scene, std::string next_scene, Order order):
         SceneEvent<SceneChange>(current_scene),
-        mNextSceneName(std::move(next_scene))
+        mNextSceneName(std::move(next_scene)),
+        mOrder(order)
     {}
     
     SceneChange::SceneChange(Scene& current_scene, std::shared_ptr<Scene> next_scene):

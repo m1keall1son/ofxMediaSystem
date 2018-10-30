@@ -14,15 +14,15 @@ namespace mediasystem {
         duration(dur)
     {}
 
-    void StateMachine::addState(State state)
+    void StateMachine::addState(State&& state)
     {
         auto name = state.mName;
         state.mParent = &mRoot;
         state.mDepth = mRoot.mDepth + 1;
-        auto it = mStates.emplace(std::move(name),std::move(state));
+        mStates.emplace(std::move(name),std::move(state));
     }
 
-    void StateMachine::addChildState(std::string parent, State state)
+    void StateMachine::addChildState(std::string parent, State&& state)
     {
         auto found = mStates.find(parent);
         if(found != mStates.end()){

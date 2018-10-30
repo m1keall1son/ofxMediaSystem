@@ -10,7 +10,7 @@
 
 namespace mediasystem {
     
-    EntityGraph::EntityGraph(Entity& me):self(me){}
+    EntityGraph::EntityGraph(Entity& me):self(me),children(me.getScene().getAllocator<EntityHandle>()){}
     EntityGraph::~EntityGraph()
     {
         children.clear();
@@ -79,6 +79,160 @@ namespace mediasystem {
             }
         }
     }
+    
+//    GraphComponent::GraphComponent(EntityHandle self):mSelf(self)
+//    {}
+//    
+//    GraphComponent::~GraphComponent()
+//    {
+//        
+//    }
+//    
+//    EntityHandle GraphComponent::findSiblingHead()
+//    {
+//        if(mPrevSibling.expired()){
+//            return mSelf;
+//        }else{
+//            auto iter = mPrevSibling.lock()->getComponent<GraphComponent>();
+//            EntityHandle ret = mPrevSibling;
+//            while(!iter->mPrevSibling.expired()){
+//                iter = iter->mPrevSibling.lock()->getComponent<GraphComponent>();
+//                ret = iter->mPrevSibling;
+//            }
+//            return ret;
+//        }
+//    }
+//    
+//    EntityHandle GraphComponent::findSiblingTail()
+//    {
+//        if(mNextSibling.expired()){
+//            return mSelf;
+//        }else{
+//            auto iter = mNextSibling.lock()->getComponent<GraphComponent>();
+//            EntityHandle ret = mNextSibling;
+//            while(!iter->mNextSibling.expired()){
+//                iter = iter->mNextSibling.lock()->getComponent<GraphComponent>();
+//                ret = iter->mNextSibling;
+//            }
+//            return ret;
+//        }
+//    }
+//    
+//    void GraphComponent::removeFromSiblings()
+//    {
+//        EntityHandle prev;
+//        EntityHandle next;
+//        StrongHandle<GraphComponent> prevGraph;
+//        StrongHandle<GraphComponent> nextGraph;
+//        if(!mPrevSibling.expired()){
+//            prevGraph = mPrevSibling.lock()->getComponent<GraphComponent>();
+//            prev = prevGraph->mNextSibling;
+//            mPrevSibling.reset();
+//        }
+//        if(!mNextSibling.expired()){
+//            nextGraph = mNextSibling.lock()->getComponent<GraphComponent>();
+//            next = nextGraph->mPrevSibling;
+//            mNextSibling.reset();
+//        }
+//        if(nextGraph){
+//            nextGraph->mPrevSibling = prev;
+//        }
+//        if(prevGraph){
+//            prevGraph->mNextSibling = next;
+//        }
+//    }
+//    
+//    void GraphComponent::setParent(EntityHandle p, bool keepGlobalPosition)
+//    {
+//        if(auto parent = mParent.lock()){
+//            removeFromParent(keepGlobalPosition);
+//        }
+//        mParent = std::move(p);
+//        if(auto parent = mParent.lock()){
+//            parent->getComponent<GraphComponent>()->addChild(mSelf, keepGlobalPosition);
+//        }
+//    }
+//    
+//    void GraphComponent::removeFromParent(bool keepGlobalPosition)
+//    {
+//        if(auto p = mParent.lock()){
+//            auto graph = p->getComponent<GraphComponent>();
+//            graph->removeChild(mSelf,keepGlobalPosition);
+//        }
+//    }
+//    
+//    void GraphComponent::addChild(EntityHandle child, bool keepGlobalPosition)
+//    {
+//        if(auto c = child.lock()){
+//            auto found = firstChild([c](const Entity& e){
+//                return c.get() == &e;
+//            });
+//            if(!found.expired()){
+//                ofLogWarning("GraphComponent") << "Graph already contain this child";
+//                return;
+//            }
+//            
+//            auto childGraph = c->getComponent<GraphComponent>();
+//            childGraph->setParent(mSelf,keepGlobalPosition);
+//            if(mChildHead.expired()){
+//                mChildHead = child;
+//            }else{
+//                auto headGraph = mChildHead.lock()->getComponent<GraphComponent>();
+//                auto tail = headGraph->findSiblingTail();
+//                tail.lock()->getComponent<GraphComponent>()->mNextSibling = child;
+//                childGraph->mPrevSibling = tail;
+//            }
+//        }
+//    }
+//    
+//    void GraphComponent::removeChild(EntityHandle child, bool keepGlobalPosition )
+//    {
+//        if(mChildHead.expired()){
+//            ofLogWarning("GraphComponent") << "Graph has no children to begin with!";
+//        }else{
+//            if(child.expired()){
+//                ofLogWarning("GraphComponent") << "handle is expired!";
+//                return;
+//            }
+//            auto c = child.lock();
+//            auto found = firstChild([c](const Entity& e){
+//                return c.get() == &e;
+//            });
+//            if(found.expired()){
+//                ofLogWarning("GraphComponent") << "Graph does not contain this child";
+//                return;
+//            }
+//            auto childGraph = c->getComponent<GraphComponent>();
+//            childGraph->removeFromParent();
+//            childGraph->removeFromSiblings();
+//        }
+//    }
+//    
+//    std::vector<EntityHandle> GraphComponent::getChildren()
+//    {
+//        std::vector<EntityHandle> ret;
+//        if(mChildHead.expired()){
+//            return ret;
+//        }else{
+//            auto iter = mNextSibling.lock()->getComponent<GraphComponent>();
+//            ret.push_back(mChildHead);
+//            while(!iter->mNextSibling.expired()){
+//                iter = iter->mNextSibling.lock()->getComponent<GraphComponent>();
+//                ret.push_back(mNextSibling);
+//            }
+//        }
+//        return ret;
+//    }
+//    
+//    std::vector<EntityHandle> GraphComponent::filterChildren( const std::function<bool(Entity&)>& predicate )
+//    {
+//        
+//    }
+//    
+//    EntityHandle GraphComponent::firstChild( const std::function<bool(Entity&)>& predicate )
+//    {
+//        
+//    }
     
     std::map<mediasystem::type_id_t, size_t> mediasystem::Entity::sComponentIds = {};
     size_t mediasystem::Entity::sNextComponentId = 0;
@@ -155,12 +309,19 @@ namespace mediasystem {
         graph->removeChild(child);
     }
     
-    std::list<EntityHandle>& Entity::getChildren()
+    EntityHandleList& Entity::getChildren()
     {
         auto graph = getComponent<EntityGraph>();
         return graph->children;
     }
     
+    void Entity::removeChildren(bool keepGlobalPosition)
+    {
+        auto graph = getComponent<EntityGraph>();
+        for(auto& child:graph->children){
+            graph->removeChild(child,keepGlobalPosition);
+        }
+    }
     
     //node component pass through
     void Entity::setPosition(float px, float py, float pz)

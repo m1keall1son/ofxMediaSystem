@@ -4,16 +4,9 @@
 
 namespace mediasystem {
 
-    Scene::Scene(const std::string & name, float transition_duration):
+    Scene::Scene(const std::string & name, AllocationManager&& allocationManager):
         mName(name),
-        mTransitionInDuration(transition_duration),
-        mTransitionOutDuration(transition_duration)
-    {}
-    
-    Scene::Scene(const std::string & name, float transition_in_duration, float transition_out_duration ):
-        mName(name),
-        mTransitionInDuration(transition_in_duration),
-        mTransitionOutDuration(transition_out_duration)
+        mAllocationManager(std::move(allocationManager))
     {}
 
     Scene::~Scene()
@@ -24,7 +17,7 @@ namespace mediasystem {
     EntityHandle Scene::createEntity()
     {
         auto next = sNextEntityId++;
-        auto it = mEntities.emplace(next, std::allocate_shared<Entity>(DynamicAllocator<Entity>(), *this, next));
+        auto it = mEntities.emplace(next, allocateStrongHandle<Entity>(Allocator<Entity>( &mAllocationManager ), *this, next));
         if(it.second){
             queueEvent<NewEntity>(it.first->second);
             //everyone gets a node component, because why not
@@ -36,15 +29,37 @@ namespace mediasystem {
         }
     }
     
+    void Scene::clearSystems(){
+        mSystems.clear();
+    }
+    
     bool Scene::destroyEntity(size_t id)
     {
         auto found = mEntities.find(id);
         if(found != mEntities.end()){
             mDestroyedEntities.push_back(id);
-            triggerEvent<DestroyEntity>(found->second);
-            found->second->clearComponents();
             return true;
         }
+        return false;
+    }
+    
+    void Scene::clearComponents(){
+        mComponents.clear();
+    }
+    
+    bool Scene::destroyComponent(type_id_t type, size_t entity_id){
+        auto found = mComponents.find(type);
+        if(found != mComponents.end()){
+            auto foundComponent = found->second.find(entity_id);
+            if(foundComponent != found->second.end()){
+                found->second.erase(foundComponent);
+                return true;
+            }else{
+                MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+                return false;
+            }
+        }
+        MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
         return false;
     }
     
@@ -52,6 +67,9 @@ namespace mediasystem {
     {
         for(size_t i = 0; i < mDestroyedEntities.size(); i++){
             auto entId = mDestroyedEntities.front();
+            auto ent = mEntities[entId];
+            triggerEvent<DestroyEntity>(ent);
+            ent->clearComponents();
             mEntities.erase(entId);
             mDestroyedEntities.pop_front();
         }
@@ -73,15 +91,6 @@ namespace mediasystem {
         }else{
             return EntityHandle();
         }
-    }
-    
-    bool Scene::destroyComponent(type_id_t type, size_t entity_id){
-        return mComponentManager.destroy(type, entity_id);
-    }
-    
-    std::weak_ptr<void> Scene::getComponent(type_id_t type, size_t entity_id)
-    {
-        return mComponentManager.retrieve(type, entity_id);
     }
     
     float Scene::getPercentTransitionComplete() const
@@ -218,9 +227,9 @@ namespace mediasystem {
         for(auto & ent : mEntities){
             ent.second->clearComponents();
         }
-        mComponentManager.clear();
+        clearComponents();
         mEntities.clear();
-        mSystemManager.clear();
+        clearSystems();
         clearQueues();
         clearDelegates();
     }

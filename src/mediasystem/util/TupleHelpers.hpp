@@ -12,17 +12,17 @@
 
 namespace mediasystem {
     
+    template<int... Is>
+    struct seq { };
+    
+    template<int N, int... Is>
+    struct gen_seq : gen_seq<N - 1, N - 1, Is...> { };
+    
+    template<int... Is>
+    struct gen_seq<0, Is...> : seq<Is...> { };
+    
     namespace detail
     {
-        template<int... Is>
-        struct seq { };
-        
-        template<int N, int... Is>
-        struct gen_seq : gen_seq<N - 1, N - 1, Is...> { };
-        
-        template<int... Is>
-        struct gen_seq<0, Is...> : seq<Is...> { };
-        
         template<typename T, typename F, int... Is>
         void for_each(T&& t, F f, seq<Is...>)
         {
@@ -50,7 +50,13 @@ namespace mediasystem {
     } //end namespace detail
     
     template <class T, class... Args>
-    T& get_element_by_type(std::tuple<Args...>& t)
+    constexpr std::size_t get_element_index_by_type(std::tuple<Args...>& t)
+    {
+        return detail::get_number_of_element_from_tuple_by_type_impl<T, 0, Args...>::value;
+    }
+    
+    template <class T, class... Args>
+    constexpr T& get_element_by_type(std::tuple<Args...>& t)
     {
         return std::get<detail::get_number_of_element_from_tuple_by_type_impl<T, 0, Args...>::value>(t);
     }
@@ -58,7 +64,7 @@ namespace mediasystem {
     template<typename... Ts, typename F>
     void for_each_in_tuple(std::tuple<Ts...>& t, F f)
     {
-        detail::for_each(t, f, detail::gen_seq<sizeof...(Ts)>());
+        detail::for_each(t, f, gen_seq<sizeof...(Ts)>());
     }
     
 }//end namespace mediasystem

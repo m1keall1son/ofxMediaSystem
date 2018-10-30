@@ -63,10 +63,10 @@ private:
 };
     
 template<typename T>
-using DrawableHandle = std::weak_ptr<Drawable<T>>;
+using DrawableHandle = Handle<Drawable<T>>;
 
 template<typename T>
-using DrawableHandleList = std::list<DrawableHandle<T>,DynamicAllocator<DrawableHandle<T>,512>>; // 1/2 KB block size
+using DrawableHandleList = std::list<DrawableHandle<T>,Allocator<DrawableHandle<T>>>;
 
 template<typename...DrawableTypes>
 class LayeredRenderer {
@@ -182,16 +182,35 @@ private:
             return layer.name == layerName;
         });
         if(found != mLayers.end()){
-            //we have this layer, pull the typed list from the tuple at a given layer
-            auto& list = get_element_by_type<DrawableHandleList<T>>(found->layer[order]);
-            list.emplace_back(std::move(handle));
+            //we have this layer, pull the typed list from the tuple at a given draw order
+            auto foundOrder = found->layer.find(order);
+            if(foundOrder != found->layer.end()){
+                auto& list = get_element_by_type<DrawableHandleList<T>>(foundOrder->second);
+                list.emplace_back(std::move(handle));
+            }else{
+                TypesList l{DrawableHandleList<DrawableTypes>(mScene.getAllocator<DrawableHandle<T>>())...};
+                auto& list = get_element_by_type<DrawableHandleList<T>>(l);
+                list.emplace_back(std::move(handle));
+                found->layer.emplace(order, std::move(l));
+            }
+            
         }else{
             //error and put it in default
             auto& defaultLayer = *(std::find_if(mLayers.begin(), mLayers.end(), [](const Layer& layer){
                 return layer.name == "default";
             }));
-            auto& list = get_element_by_type<DrawableHandleList<T>>(defaultLayer.layer[order]);
-            list.emplace_back(std::move(handle));
+            
+            auto foundOrder = defaultLayer.layer.find(order);
+            if(foundOrder != defaultLayer.layer.end()){
+                auto& list = get_element_by_type<DrawableHandleList<T>>(foundOrder->second);
+                list.emplace_back(std::move(handle));
+            }else{
+                TypesList l{DrawableHandleList<DrawableTypes>(mScene.getAllocator<DrawableHandle<T>>())...};
+                auto& list = get_element_by_type<DrawableHandleList<T>>(l);
+                list.emplace_back(std::move(handle));
+                defaultLayer.layer.emplace(order, std::move(l));
+            }
+            
             MS_LOG_ERROR("Didnt have a rendering layer called: " + layerName + " placeing drawable in default layer.");
         }
     }

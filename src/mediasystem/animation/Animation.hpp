@@ -94,7 +94,7 @@ namespace mediasystem {
         }
         
         void setUpdateFn(std::function<void()> update) override {
-            mOnUpdateFn = [&,update](){
+            Playable::setUpdateFn([&,update](){
                 auto percent = getPercentComplete();
                 if(mEaseFn)
                     percent = mEaseFn(percent);
@@ -103,7 +103,7 @@ namespace mediasystem {
                     *mTarget = mCurrent;
                 if(update)
                     update();
-            };
+            });
         }
         
         void animateTo(T end){ mStart = mCurrent; mEnd = std::move(end); play(); }
@@ -157,8 +157,8 @@ namespace mediasystem {
             mScene.removeDelegate<Update>(EventDelegate::create<AnimationManager,&AnimationManager::onUpdate>(this));
         }
         
-        std::shared_ptr<Animatable<float>> createAnimation(std::string name, float start, float end, float duration, EaseFn easing = nullptr, Animatable<float>::Options opts = Animatable<float>::Options()){
-            std::shared_ptr<Animatable<float>> ret;
+        StrongHandle<Animatable<float>> createAnimation(std::string name, float start, float end, float duration, EaseFn easing = nullptr, Animatable<float>::Options opts = Animatable<float>::Options()){
+            StrongHandle<Animatable<float>> ret;
             ret.reset(new Animatable<float>(start, end, duration, std::move(easing), std::move(opts)));
             auto found = mAnimations.find(name);
             if(found == mAnimations.end()){
@@ -188,8 +188,8 @@ namespace mediasystem {
             static_assert(std::is_base_of<Animator,T>::value, "T must derive from Animator, ie be some Animatable<type>");
             auto newCompEvent = std::static_pointer_cast<NewComponent<T>>(event);
             auto handle = newCompEvent->getComponentHandle();
-            auto anim = std::static_pointer_cast<Animator>(handle.lock());
-            auto weakGeneric = std::weak_ptr<Animator>(anim);
+            auto anim = staticCast<Animator>(handle.lock());
+            auto weakGeneric = Handle<Animator>(anim);
             mAnimationComponents.push_back(weakGeneric);
             return EventStatus::SUCCESS;
         }
@@ -224,8 +224,8 @@ namespace mediasystem {
             return EventStatus::SUCCESS;
         }
 
-        std::map<std::string,std::weak_ptr<Animatable<float>>> mAnimations;
-        std::list<std::weak_ptr<Animator>> mAnimationComponents;
+        std::map<std::string,Handle<Animatable<float>>> mAnimations;
+        std::list<Handle<Animator>> mAnimationComponents;
         Scene& mScene;
     };
 

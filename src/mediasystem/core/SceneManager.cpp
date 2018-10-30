@@ -44,15 +44,16 @@ namespace mediasystem {
         }
     }
     
-    std::shared_ptr<Scene> SceneManager::createScene(const std::string& name, int eventDequeuTimeLimit)
+    StrongHandle<Scene> SceneManager::createScene(const std::string& name, AllocationManager&& allocator)
     {
-        auto scene = std::make_shared<Scene>(name, eventDequeuTimeLimit);
+        auto scene = makeStrongHandle<Scene>(name, std::move(allocator));
         addScene(scene);
         return scene;
     }
     
-    void SceneManager::changeSceneTo(const std::string& nextScene)
+    void SceneManager::changeSceneTo(const std::string& nextScene, SceneChange::Order drawOrder)
     {
+        mDrawOrder = drawOrder;
         mNextScene = nullptr;
         mNextScene = getScene(nextScene);
         if(!mNextScene){
@@ -62,13 +63,18 @@ namespace mediasystem {
         }
     }
     
-    void SceneManager::changeSceneTo(std::shared_ptr<Scene> scene)
+    void SceneManager::changeSceneTo(StrongHandle<Scene> scene, SceneChange::Order drawOrder )
     {
+        mDrawOrder = drawOrder;
         mNextScene = scene;
-        transition();
+        if(mNextScene)
+            transition();
+        else{
+            MS_LOG_ERROR("Passed a null scene!");
+        }
     }
     
-    void SceneManager::addScene(std::shared_ptr<Scene> scene)
+    void SceneManager::addScene(StrongHandle<Scene> scene)
     {
         scene->addDelegate<SceneChange>(EventDelegate::create<SceneManager, &SceneManager::onChangeScene>(this));
         mScenes.emplace_back(std::move(scene));
@@ -79,6 +85,9 @@ namespace mediasystem {
         MS_LOG_VERBOSE("Transitioning complete! swapping current and next");
         mCurrentScene = mNextScene;
         mNextScene = nullptr;
+        mBottom = nullptr;
+        mTop = mCurrentScene;
+        
         return EventStatus::REMOVE_THIS_DELEGATE;
     }
     
@@ -100,15 +109,28 @@ namespace mediasystem {
                 mNextScene = nullptr;
             }
             
+            switch(mDrawOrder){
+                case SceneChange::Order::DRAW_OVER_PREVIOUS:
+                    mBottom = mCurrentScene;
+                    mTop = mNextScene;
+                    break;
+                case SceneChange::Order::DRAW_UNDER_PREVIOUS:
+                    mBottom = mNextScene;
+                    mTop = mCurrentScene;
+                    break;
+            }
+            
         }else{
             mCurrentScene = mNextScene;
+            mTop = mNextScene;
+            mBottom = nullptr;
             mNextScene = nullptr;
             mCurrentScene->notifyTransitionIn();
             MS_LOG_VERBOSE("Changing scene to: " + mCurrentScene->getName());
         }
     }
     
-    std::shared_ptr<Scene> SceneManager::getScene(const std::string& name) const
+    StrongHandle<Scene> SceneManager::getScene(const std::string& name) const
     {
         for (size_t i = 0; i < mScenes.size(); i++ ) {
             auto scene = mScenes[i];
@@ -128,12 +150,11 @@ namespace mediasystem {
         
         MS_LOG_VERBOSE("Received a scene change request...");
         
-        auto cast = std::static_pointer_cast<SceneChange>(sceneChange);
-        mNextScene = cast->getNextScene();
-        if(mNextScene){
-            transition();
+        auto cast = staticCast<SceneChange>(sceneChange);
+        if(cast->getNextScene()){
+            changeSceneTo(cast->getNextScene(),cast->getDrawOrder());
         }else{
-            changeSceneTo(cast->getNextSceneName());
+            changeSceneTo(cast->getNextSceneName(),cast->getDrawOrder());
         }
         return EventStatus::SUCCESS;
     }
@@ -176,11 +197,11 @@ namespace mediasystem {
     
     void SceneManager::draw()
     {
-        if(mCurrentScene)
-            mCurrentScene->notifyDraw();
+        if(mBottom)
+            mBottom->notifyDraw();
         
-        if(mNextScene)
-            mNextScene->notifyDraw();
+        if(mTop)
+            mTop->notifyDraw();
     }
 
     void SceneManager::destroyScene(const std::string& name)
@@ -195,7 +216,7 @@ namespace mediasystem {
         }
     }
     
-    void SceneManager::destroyScene(const std::shared_ptr<Scene>& scene)
+    void SceneManager::destroyScene(const StrongHandle<Scene>& scene)
     {
         auto found = std::find(mScenes.begin(), mScenes.end(), scene);
         if(found != mScenes.end()){
@@ -210,6 +231,8 @@ namespace mediasystem {
         mScenes.clear();
         mNextScene = nullptr;
         mCurrentScene = nullptr;
+        mTop = nullptr;
+        mBottom = nullptr;
         resetFrameTime();
     }
     
