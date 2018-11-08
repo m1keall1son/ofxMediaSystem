@@ -146,6 +146,28 @@ namespace mediasystem {
     
     void Scene::notifyUpdate(size_t elapsedFrames, float elapsedTime, float prevFrameTime)
     {
+        mCurrentTime = elapsedTime;
+        
+        if(!mStagedCues.empty())
+            mCues.splice(mCues.end(), mStagedCues);
+        
+        auto it = mCues.begin();
+        auto end = mCues.end();
+        while(it!=end){
+            auto & cue = *it;
+            if(elapsedTime >= cue.executionTime){
+                cue.handler();
+                if(cue.repeats){
+                    cue.executionTime += cue.interval;
+                    ++it;
+                }else{
+                    it = mCues.erase(it);
+                }
+            }else {
+                ++it;
+            }
+        }
+        
         if(mIsTransitioning){
             auto perc = getPercentTransitionComplete();
             if(perc >= 1.){
@@ -179,6 +201,8 @@ namespace mediasystem {
 
     void Scene::notifyStop()
     {
+        mStagedCues.clear();
+        mCues.clear();
         mHasStarted = false;
         mIsTransitioning = false;
         stop();
@@ -222,6 +246,8 @@ namespace mediasystem {
     
     void Scene::notifyShutdown()
     {
+        mStagedCues.clear();
+        mCues.clear();
         shutdown();
         triggerEvent<Shutdown>(*this);
         for(auto & ent : mEntities){
@@ -261,4 +287,67 @@ namespace mediasystem {
         mSequence.requestState(std::move(state));
     }
 
+    static size_t sCueIds = 0;
+    
+    CueId Scene::cueAtTime(float seconds, std::function<void()> handler)
+    {
+        if(seconds > mCurrentTime){
+            auto id = sCueIds++;
+            Cue c;
+            c.interval = seconds;
+            c.executionTime = mCurrentTime + seconds;
+            c.handler = std::move(handler);
+            c.id = id;
+            mStagedCues.emplace_back(std::move(c));
+            return id;
+        }
+        
+        ofLogError("Scene") << "Could not create a cue at time: " << seconds << " that has already passed, current time: " << mCurrentTime;
+        
+        return -1;
+    }
+    
+    CueId Scene::cueFromNow(float seconds, std::function<void()> handler)
+    {
+        auto id = sCueIds++;
+        Cue c;
+        c.interval = seconds;
+        c.executionTime = mCurrentTime + seconds;
+        c.handler = std::move(handler);
+        c.id = id;
+        mStagedCues.emplace_back(std::move(c));
+        return id;
+    }
+    
+    CueId Scene::cueInterval(float seconds, std::function<void()> handler)
+    {
+        auto id = sCueIds++;
+        Cue c;
+        c.interval = seconds;
+        c.executionTime = mCurrentTime + seconds;
+        c.handler = std::move(handler);
+        c.id = id;
+        mStagedCues.emplace_back(std::move(c));
+        return id;
+    }
+    
+    void Scene::cancelCue(CueId id)
+    {
+        auto found = std::find_if(mCues.begin(), mCues.end(), [id](const Cue& cue){
+            return cue.id == id;
+        });
+        if(found!=mCues.end()){
+            mCues.erase(found);
+            return;
+        }
+        found = std::find_if(mStagedCues.begin(), mStagedCues.end(), [id](const Cue& cue){
+            return cue.id == id;
+        });
+        if(found!=mStagedCues.end()){
+            mStagedCues.erase(found);
+            return;
+        }
+        ofLogWarning("Scene") << "There is no Cue for id: " << id;
+    }
+    
 }//end namespace mediasystem

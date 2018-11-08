@@ -13,12 +13,17 @@
 #include "mediasystem/rendering/IPresenter.h"
 #include "mediasystem/rendering/DefaultPresenter.h"
 #include "mediasystem/util/TupleHelpers.hpp"
+#include "mediasystem/util/MemberDetection.hpp"
 
 namespace mediasystem {
 
+GENERATE_HAS_MEMBER_FUNCTION_SIGNITURE(draw);
+    
 template<typename T>
 class Drawable : public T {
 public:
+    
+    static_assert( has_member_function_signiture_draw<T,void()>(), "Passed type T must have member function void draw();" );
     
     template<typename...Args>
     Drawable(Entity& entity, Args&&...args):

@@ -10,6 +10,7 @@
 
 namespace mediasystem {
     
+    using CueId = size_t;
     class Entity;
     using EntityStrongHandle = StrongHandle<Entity>;
     using EntityHandle = Handle<Entity>;
@@ -243,6 +244,11 @@ namespace mediasystem {
             return Allocator<T>(&mAllocationManager, fmt);
         }
         
+        CueId cueAtTime(float seconds, std::function<void()> handler);
+        CueId cueFromNow(float seconds, std::function<void()> handler);
+        CueId cueInterval(float seconds, std::function<void()> handler);
+        void cancelCue(CueId id);
+        
 	protected:
         
         virtual void init(){}
@@ -296,6 +302,18 @@ namespace mediasystem {
         std::deque<size_t> mDestroyedEntities;
         std::string mPreviousScene;
         StateMachine mSequence;
+        
+        struct Cue {
+            std::function<void()> handler;
+            float executionTime{0.f};
+            float interval{0.f};
+            bool repeats{false};
+            size_t id;
+        };
+        
+        float mCurrentTime{0};
+        std::list<Cue> mStagedCues;
+        std::list<Cue> mCues;
         friend class SceneManager;
 	};
     

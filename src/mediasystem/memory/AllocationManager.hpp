@@ -84,7 +84,7 @@ namespace mediasystem {
                     default: continue;
                 }
             }
-            return std::move(policy);
+            return policy;
         }
         
         std::map<type_id_t, std::unique_ptr<IAllocationPolicy>> mAllocaitonPolicies;
