@@ -55,11 +55,11 @@ namespace mediasystem {
                 found->second.erase(foundComponent);
                 return true;
             }else{
-                MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+                ofLogError("Scene") << ("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
                 return false;
             }
         }
-        MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+        ofLogError("Scene") << ("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
         return false;
     }
     

@@ -98,9 +98,14 @@ namespace mediasystem {
             if(it.second){
                 return shared;
             }else{
-                MS_LOG_ERROR("Scene: CANNOT CREATE SYSTEM");
+                ofLogWarning("Scene") << ("Scene: Cannot create system, probably already has it.");
                 return nullptr;
             }
+        }
+        
+        template<typename SystemType>
+        bool hasSystem(){
+            return mSystems.count(type_id<SystemType>) > 0;
         }
         
         template<typename SystemType>
@@ -110,7 +115,7 @@ namespace mediasystem {
                 auto shared = staticCast<SystemType>(found->second);
                 return std::move(shared);
             }else{
-                MS_LOG_ERROR("Scene: DOES NOT HAVE SYSTEM");
+                ofLogError("Scene") << ("Scene: Trying to get system that scene doesn't have.");
                 return nullptr;
             }
         }
@@ -122,7 +127,7 @@ namespace mediasystem {
                 mSystems.erase(found);
                 return true;
             }else{
-                MS_LOG_ERROR("Scene: DOES NOT HAVE SYSTEM");
+                ofLogWarning("Scene") << ("Scene: Trying to destroy system that scene doesn't have.");
                 return false;
             }
         }
@@ -138,7 +143,7 @@ namespace mediasystem {
                     queueEvent<NewComponent<ComponentType>>(getEntity(entity_id), shared);
                     return shared;
                 }else{
-                    MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " COULD NOT CREATE COMPONENT");
+                    ofLogError("Scene") << ("ComponentManager: Entity id: " + std::to_string(entity_id) + " COULD NOT CREATE COMPONENT");
                     return Handle<ComponentType>();
                 }
             }else{
@@ -149,11 +154,11 @@ namespace mediasystem {
                         queueEvent<NewComponent<ComponentType>>( getEntity(entity_id), shared);
                         return shared;
                     }else{
-                        MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " COULD NOT CREATE COMPONENT");
+                        ofLogError("Scene") << ("ComponentManager: Entity id: " + std::to_string(entity_id) + " COULD NOT CREATE COMPONENT");
                         return Handle<ComponentType>();
                     }
                 }else{
-                    MS_LOG_ERROR("ComponentManager: COULD NOT CREATE GENERIC COMPONENT MAP FOR COMPONENT TYPE");
+                    ofLogError("Scene") << ("ComponentManager: COULD NOT CREATE GENERIC COMPONENT MAP FOR COMPONENT TYPE");
                     return Handle<ComponentType>();
                 }
             }
@@ -167,11 +172,11 @@ namespace mediasystem {
                 if(foundComp != found->second.end()){
                     return staticCast<ComponentType>(foundComp->second);
                 }else{
-                    MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+                    ofLogError("Scene") << ("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
                     return Handle<ComponentType>();
                 }
             }else{
-                MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+                ofLogError("Scene") << ("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
                 return Handle<ComponentType>();
             }
         }
@@ -183,11 +188,11 @@ namespace mediasystem {
                 if(foundComp != found->second.end()){
                     return foundComp->second;
                 }else{
-                    MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+                    ofLogError("Scene") << ("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
                     return Handle<void>();
                 }
             }else{
-                MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+                ofLogError("Scene") << ("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
                 return Handle<void>();
             }
         }
@@ -201,11 +206,11 @@ namespace mediasystem {
                     found->second.erase(foundComp);
                     return true;
                 }else{
-                    MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+                    ofLogError("Scene") << ("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
                     return false;
                 }
             }else{
-                MS_LOG_ERROR("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
+                ofLogError("Scene") << ("ComponentManager: Entity id: " + std::to_string(entity_id) + " DOES NOT HAVE COMPONENT");
                 return false;
             }
         }
@@ -222,7 +227,7 @@ namespace mediasystem {
             if(it.second){
                 return ComponentMap<ComponentType>(&it.first->second);
             }else{
-                MS_LOG_ERROR("ComponentManager: COULD NOT CREATE GENERIC COMPONENT MAP FOR COMPONENT TYPE");
+                ofLogError("Scene") << ("ComponentManager: COULD NOT CREATE GENERIC COMPONENT MAP FOR COMPONENT TYPE");
                 return ComponentMap<ComponentType>();
             }
         }
