@@ -15,10 +15,10 @@
 
 namespace mediasystem {
     
+    //template<typename T>
+    //using Allocator = ms_Allocator<T>;
+        
     template<typename T>
-    using Allocator = _Allocator<T>;
-    
-//    template<typename T>
-//    using Allocator = std::allocator<T>;
+    using Allocator = std_Allocator<T>;
     
 }//end namespace mediasystem

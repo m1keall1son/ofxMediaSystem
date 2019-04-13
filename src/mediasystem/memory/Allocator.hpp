@@ -14,11 +14,27 @@
 namespace mediasystem {
     
     template<typename T>
-    class _Allocator {
+    class std_Allocator : public std::allocator<T> {
+    public:
+        ALLOCATOR_TRAITS(T);
+        explicit std_Allocator(AllocationManager* manager = nullptr, const AllocationPolicyFormat& fmt = AllocationPolicyFormat()){}
+        
+        template<typename U>
+        struct rebind
+        {
+            typedef std_Allocator<U> other;
+        };
+        
+        template<typename U>
+        std_Allocator(std_Allocator<U> const& other): std::allocator<T>(other){}
+    };
+    
+    template<typename T>
+    class ms_Allocator {
     public:
         ALLOCATOR_TRAITS(T);
         
-        explicit _Allocator(AllocationManager* manager = nullptr, const AllocationPolicyFormat& fmt = AllocationPolicyFormat()):mManager(manager){
+        explicit ms_Allocator(AllocationManager* manager = nullptr, const AllocationPolicyFormat& fmt = AllocationPolicyFormat()):mManager(manager){
             if(mManager){
                 auto policy = mManager->getPolicy<T>();
                 if(!policy){
@@ -30,11 +46,11 @@ namespace mediasystem {
         template<typename U>
         struct rebind
         {
-            typedef _Allocator<U> other;
+            typedef ms_Allocator<U> other;
         };
         
         template<typename U>
-        _Allocator(_Allocator<U> const& other) :
+        ms_Allocator(ms_Allocator<U> const& other) :
             mManager(other.mManager)
         {
             if(!mManager)
@@ -100,44 +116,86 @@ namespace mediasystem {
 
 // Two allocators are not equal unless a specialization says so
 template<typename T>
-bool operator==(mediasystem::_Allocator<T> const& left, mediasystem::_Allocator<T> const& right)
+bool operator==(mediasystem::ms_Allocator<T> const& left, mediasystem::ms_Allocator<T> const& right)
 {
-    return left.mManager == right.mManager;
+    return true;
 }
 
 // Two allocators are not equal unless a specialization says so
 template<typename T>
-bool operator!=(mediasystem::_Allocator<T> const& left, mediasystem::_Allocator<T> const& right)
+bool operator!=(mediasystem::ms_Allocator<T> const& left, mediasystem::ms_Allocator<T> const& right)
 {
     return !(left == right);
 }
 
 // Two allocators are not equal unless a specialization says so
 template<typename T,typename U>
-bool operator==(mediasystem::_Allocator<T> const& left, mediasystem::_Allocator<U> const& right)
+bool operator==(mediasystem::ms_Allocator<T> const& left, mediasystem::ms_Allocator<U> const& right)
 {
 	return false;
 }
 
 // Also implement inequality
 template<typename T, typename U>
-bool operator!=(mediasystem::_Allocator<T> const& left, mediasystem::_Allocator<U> const& right)
+bool operator!=(mediasystem::ms_Allocator<T> const& left, mediasystem::ms_Allocator<U> const& right)
 {
 	return !(left == right);
 }
 
 // Comparing an allocator to anything else should not show equality
 template<typename T, typename OtherAllocator>
-bool operator==(mediasystem::_Allocator<T> const& left, OtherAllocator const& right)
+bool operator==(mediasystem::ms_Allocator<T> const& left, OtherAllocator const& right)
 {
 	return false;
 }
 
 // Also implement inequality
 template<typename T, typename OtherAllocator>
-bool operator!=(mediasystem::_Allocator<T> const& left, OtherAllocator const& right)
+bool operator!=(mediasystem::ms_Allocator<T> const& left, OtherAllocator const& right)
 {
 	return !(left == right);
 }
-    
+
+
+// Two allocators are not equal unless a specialization says so
+template<typename T>
+bool operator==(mediasystem::std_Allocator<T> const& left, mediasystem::std_Allocator<T> const& right)
+{
+    return &left == &right;
+}
+
+// Two allocators are not equal unless a specialization says so
+template<typename T>
+bool operator!=(mediasystem::std_Allocator<T> const& left, mediasystem::std_Allocator<T> const& right)
+{
+    return !(left == right);
+}
+
+// Two allocators are not equal unless a specialization says so
+template<typename T,typename U>
+bool operator==(mediasystem::std_Allocator<T> const& left, mediasystem::std_Allocator<U> const& right)
+{
+    return false;
+}
+
+// Also implement inequality
+template<typename T, typename U>
+bool operator!=(mediasystem::std_Allocator<T> const& left, mediasystem::std_Allocator<U> const& right)
+{
+    return !(left == right);
+}
+
+// Comparing an allocator to anything else should not show equality
+template<typename T, typename OtherAllocator>
+bool operator==(mediasystem::std_Allocator<T> const& left, OtherAllocator const& right)
+{
+    return false;
+}
+
+// Also implement inequality
+template<typename T, typename OtherAllocator>
+bool operator!=(mediasystem::std_Allocator<T> const& left, OtherAllocator const& right)
+{
+    return !(left == right);
+}
 
